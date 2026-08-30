@@ -1,0 +1,26 @@
+[
+  {
+    "category": "Food Supplies",
+    "stockPercent": 82,
+    "targetDaysReserve": 30,
+    "currentDaysReserve": 24,
+    "districtsAtRisk": 1,
+    "source": "Simulated State Civil Supplies Benchmark"
+  },
+  {
+    "category": "Emergency Medical Supplies",
+    "stockPercent": 46,
+    "targetDaysReserve": 21,
+    "currentDaysReserve": 9,
+    "districtsAtRisk": 3,
+    "source": "Simulated State Health Department Benchmark"
+  },
+  {
+    "category": "Infrastructure & Repair Materials",
+    "stockPercent": 71,
+    "targetDaysReserve": 45,
+    "currentDaysReserve": 32,
+    "districtsAtRisk": 0,
+    "source": "Simulated PWD Disaster Recovery Benchmark"
+  }
+]

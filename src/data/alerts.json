@@ -1,0 +1,24 @@
+[
+  {
+    "id": "ALT-001",
+    "type": "ROAD_BLOCKED",
+    "severity": "CRITICAL",
+    "corridor": "NH-37 (Dima Hasao / Kaziranga Sector)",
+    "title": "ROAD BLOCKED — Landslide Detected",
+    "message": "Major landslide blocking NH-37. Alternate Route B (Bypass) is recommended (+45 min delay).",
+    "timestamp": "09:42 HRS",
+    "affectedDistricts": ["Dima Hasao", "Cachar", "Karbi Anglong"],
+    "affectedVehicles": ["VEH-104"]
+  },
+  {
+    "id": "ALT-002",
+    "type": "ROAD_RESTRICTED",
+    "severity": "HIGH",
+    "corridor": "NH-6 (Jowai – Silchar Corridor)",
+    "title": "ROAD RESTRICTED — Single Lane Subsidence",
+    "message": "Single-file convoy escort in effect. Heavy vehicles advised to proceed with caution.",
+    "timestamp": "10:15 HRS",
+    "affectedDistricts": ["East Jaintia Hills", "Cachar"],
+    "affectedVehicles": ["VEH-205"]
+  }
+]

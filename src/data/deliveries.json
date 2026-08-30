@@ -1,0 +1,46 @@
+[
+  {
+    "id": "DEL-0891",
+    "vehicleId": "VEH-104",
+    "destination": "Jiribam Sub-Divisional Hospital, Manipur",
+    "cargoType": "Medicine",
+    "quantityTons": 4.5,
+    "priority": "CRITICAL",
+    "scheduledArrival": "14:30 IST",
+    "status": "IN_TRANSIT",
+    "source": "Simulated Prototype Delivery Manifest"
+  },
+  {
+    "id": "DEL-0892",
+    "vehicleId": "VEH-205",
+    "destination": "Tezu Civil Supplies Warehouse, Arunachal Pradesh",
+    "cargoType": "Food",
+    "quantityTons": 12.0,
+    "priority": "HIGH",
+    "scheduledArrival": "18:45 IST",
+    "status": "IN_TRANSIT",
+    "source": "Simulated Prototype Delivery Manifest"
+  },
+  {
+    "id": "DEL-0893",
+    "vehicleId": "VEH-312",
+    "destination": "Jowai PWD Infrastructure Depot, Meghalaya",
+    "cargoType": "Construction Material",
+    "quantityTons": 18.0,
+    "priority": "NORMAL",
+    "scheduledArrival": "11:20 IST",
+    "status": "IN_TRANSIT",
+    "source": "Simulated Prototype Delivery Manifest"
+  },
+  {
+    "id": "DEL-0894",
+    "vehicleId": "VEH-409",
+    "destination": "Dimapur Central Medical Store, Nagaland",
+    "cargoType": "Medicine",
+    "quantityTons": 6.2,
+    "priority": "HIGH",
+    "scheduledArrival": "16:15 IST",
+    "status": "IN_TRANSIT",
+    "source": "Simulated Prototype Delivery Manifest"
+  }
+]

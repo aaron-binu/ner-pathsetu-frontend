@@ -1,0 +1,47 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "id": "INC-2026-081",
+      "properties": {
+        "id": "INC-2026-081",
+        "type": "Landslide",
+        "severity": "CRITICAL",
+        "roadSegmentId": "NH-37",
+        "roadName": "NH-37 near Jiribam / Cachar Border",
+        "roadStatus": "BLOCKED",
+        "timeLogged": "10 mins ago",
+        "reportedBy": "Field Sentinel #4 (PWD Cachar Patrol)",
+        "source": "Field Sentinel Report (Simulated Demo Incident)",
+        "isSimulated": true,
+        "notes": "Large mud and rock debris blocking both lanes. Clearance ETA 4-6 hours."
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [93.1200, 24.8000]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "INC-2026-082",
+      "properties": {
+        "id": "INC-2026-082",
+        "type": "Road Damage",
+        "severity": "HIGH",
+        "roadSegmentId": "NH-6",
+        "roadName": "NH-6 Meghalaya Hill Section",
+        "roadStatus": "RESTRICTED",
+        "timeLogged": "45 mins ago",
+        "reportedBy": "BRO Patrol Unit Meghalaya",
+        "source": "Field Sentinel Report (Simulated Demo Incident)",
+        "isSimulated": true,
+        "notes": "Single-lane traffic movement allowed due to minor shoulder subsidence."
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [92.2000, 25.4500]
+      }
+    }
+  ]
+}

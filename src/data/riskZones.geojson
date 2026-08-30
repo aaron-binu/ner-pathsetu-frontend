@@ -1,0 +1,122 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "id": "RZ-DIMA-HASAO",
+      "properties": {
+        "id": "RZ-DIMA-HASAO",
+        "name": "Dima Hasao District (Hill Slopes & Ghat Corridor)",
+        "district": "Dima Hasao",
+        "state": "Assam",
+        "riskLevel": "CRITICAL",
+        "riskScore": 88,
+        "hazardType": "Landslide / Mountain Slope Failure",
+        "source": "NASA LHASA / IMD Precipitation Benchmark (Prototype Dataset)",
+        "isSimulated": true
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [92.7100, 25.4800],
+            [92.9500, 25.5500],
+            [93.2000, 25.4200],
+            [93.3100, 25.1800],
+            [93.1800, 24.9500],
+            [92.8200, 24.9200],
+            [92.6500, 25.1200],
+            [92.6200, 25.3500],
+            [92.7100, 25.4800]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "RZ-EAST-KHASI",
+      "properties": {
+        "id": "RZ-EAST-KHASI",
+        "name": "East Khasi Hills District (Escarpment Sector)",
+        "district": "East Khasi Hills",
+        "state": "Meghalaya",
+        "riskLevel": "HIGH",
+        "riskScore": 68,
+        "hazardType": "High-Intensity Rainfall / Debris Flow",
+        "source": "IMD Heavy Rain Alert Aligned (Prototype Dataset)",
+        "isSimulated": true
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [91.6200, 25.4200],
+            [91.9500, 25.4600],
+            [92.1500, 25.3800],
+            [92.1800, 25.1200],
+            [91.8800, 25.0200],
+            [91.5800, 25.1500],
+            [91.6200, 25.4200]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "RZ-KAZIRANGA-FLOOD",
+      "properties": {
+        "id": "RZ-KAZIRANGA-FLOOD",
+        "name": "Golaghat / Nagaon (Brahmaputra Lowland Belt)",
+        "district": "Golaghat & Nagaon",
+        "state": "Assam",
+        "riskLevel": "HIGH",
+        "riskScore": 74,
+        "hazardType": "River Inundation / Floodplain Overflow",
+        "source": "CWC Hydrological / NASA LHASA Benchmark (Prototype Dataset)",
+        "isSimulated": true
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [92.9500, 26.5800],
+            [93.3500, 26.6800],
+            [93.7500, 26.6500],
+            [93.6800, 26.4500],
+            [93.2800, 26.4200],
+            [92.9800, 26.4500],
+            [92.9500, 26.5800]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "RZ-JIRIBAM-CORRIDOR",
+      "properties": {
+        "id": "RZ-JIRIBAM-CORRIDOR",
+        "name": "Jiribam / NH-37 Foothills Hazard Sector",
+        "district": "Jiribam / Cachar Border",
+        "state": "Manipur / Assam",
+        "riskLevel": "CRITICAL",
+        "riskScore": 82,
+        "hazardType": "Active Slope Instability / Rockfall",
+        "source": "Field Patrol & NASA LHASA Benchmark (Prototype Dataset)",
+        "isSimulated": true
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [92.9800, 24.9500],
+            [93.2500, 24.9200],
+            [93.3200, 24.6800],
+            [93.0800, 24.6500],
+            [92.9200, 24.7800],
+            [92.9800, 24.9500]
+          ]
+        ]
+      }
+    }
+  ]
+}

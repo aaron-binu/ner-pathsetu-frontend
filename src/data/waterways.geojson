@@ -1,0 +1,78 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "id": "NW-2-CORRIDOR",
+      "properties": {
+        "id": "NW-2-CORRIDOR",
+        "name": "National Waterway 2 (Brahmaputra River Navigation Corridor)",
+        "type": "Corridor",
+        "status": "OPERATIONAL",
+        "lengthKm": 891,
+        "source": "Inland Waterways Authority of India (IWAI NW-2 Dataset)",
+        "isSimulated": false
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [89.9700, 26.0200],
+          [90.6000, 26.1500],
+          [91.7362, 26.1856],
+          [92.8000, 26.6200],
+          [93.8000, 26.8500],
+          [94.6000, 27.2500],
+          [95.3000, 27.6500]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "TERM-PANDU",
+      "properties": {
+        "id": "TERM-PANDU",
+        "name": "Pandu Port (Guwahati Multimodal Terminal)",
+        "type": "Terminal",
+        "status": "OPERATIONAL",
+        "source": "Inland Waterways Authority of India (IWAI Verified Terminal)",
+        "isSimulated": false
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [91.7020, 26.1680]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "TERM-DHUBRI",
+      "properties": {
+        "id": "TERM-DHUBRI",
+        "name": "Dhubri River Port Terminal",
+        "type": "Terminal",
+        "status": "OPERATIONAL",
+        "source": "Inland Waterways Authority of India (IWAI Verified Terminal)",
+        "isSimulated": false
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [89.9700, 26.0200]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "TERM-SILGHAT",
+      "properties": {
+        "id": "TERM-SILGHAT",
+        "name": "Silghat IWT Terminal",
+        "type": "Terminal",
+        "status": "OPERATIONAL",
+        "source": "Inland Waterways Authority of India (IWAI Verified Terminal)",
+        "isSimulated": false
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [92.9300, 26.6100]
+      }
+    }
+  ]
+}

@@ -1,0 +1,56 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "id": "BR-SARAIGHAT",
+      "properties": {
+        "id": "BR-SARAIGHAT",
+        "name": "Saraighat Bridge (Guwahati)",
+        "river": "Brahmaputra River",
+        "bridgeType": "Double-deck Rail-cum-Road",
+        "status": "OPEN",
+        "source": "OpenStreetMap / MoRTH Verified Infrastructure",
+        "isSimulated": false
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [91.6880, 26.1770]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "BR-KOLIA-BHOMORA",
+      "properties": {
+        "id": "BR-KOLIA-BHOMORA",
+        "name": "Kolia Bhomora Setu (Tezpur)",
+        "river": "Brahmaputra River",
+        "bridgeType": "Prestressed Concrete Road Bridge",
+        "status": "OPEN",
+        "source": "OpenStreetMap / MoRTH Verified Infrastructure",
+        "isSimulated": false
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [92.8600, 26.6080]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "BR-BARAK-SILCHAR",
+      "properties": {
+        "id": "BR-BARAK-SILCHAR",
+        "name": "Barak River Bridge (Silchar Bypass)",
+        "river": "Barak River",
+        "bridgeType": "Steel Truss Road Bridge",
+        "status": "OPEN",
+        "source": "OpenStreetMap / MoRTH Verified Infrastructure",
+        "isSimulated": false
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [92.7950, 24.8320]
+      }
+    }
+  ]
+}

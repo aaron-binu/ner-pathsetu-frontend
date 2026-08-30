@@ -1,0 +1,30 @@
+[
+  {
+    "id": "INC-01",
+    "type": "Landslide",
+    "severity": "CRITICAL",
+    "roadSegmentId": "NH-37",
+    "roadName": "NH Corridor (Dima Hasao / Kaziranga Sector)",
+    "roadStatus": "BLOCKED",
+    "coordinates": [93.1520, 26.5820],
+    "timeLogged": "09:42 HRS",
+    "photoUrl": "/assets/landslide-cam.jpg",
+    "reportedBy": "Field Sentinel Unit #12 (Field Officer B. Gogoi)",
+    "syncStatus": "SYNCED",
+    "notes": "Major debris blockage of 180m over carriageway. Heavy mudflow continuing. Immediate diversion required."
+  },
+  {
+    "id": "INC-02",
+    "type": "Road Damage",
+    "severity": "HIGH",
+    "roadSegmentId": "NH-6",
+    "roadName": "NH-6 Jowai–Silchar Mountain Sector",
+    "roadStatus": "RESTRICTED",
+    "coordinates": [92.2000, 25.4500],
+    "timeLogged": "10:15 HRS",
+    "photoUrl": "/assets/road-damage.jpg",
+    "reportedBy": "Field Sentinel Unit #07 (Officer K. Sangma)",
+    "syncStatus": "SYNCED",
+    "notes": "Single-lane subsidence due to continuous heavy rainfall. Single-file escorted convoy only."
+  }
+]

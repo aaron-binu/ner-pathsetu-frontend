@@ -1,0 +1,50 @@
+{
+  "en": {
+    "name": "English",
+    "nativeName": "English",
+    "alertTitle": "ROAD BLOCKED",
+    "alertSubtitle": "Landslide detected on NH Corridor. Alternative route available.",
+    "speechText": "Alert. Road Blocked. Landslide detected on National Highway Corridor. Alternative Route B is recommended with an estimated forty-five minute delay.",
+    "langCode": "en-IN"
+  },
+  "as": {
+    "name": "Assamese",
+    "nativeName": "অসমীয়া",
+    "alertTitle": "পথ অৱৰোধ (BLOCKED)",
+    "alertSubtitle": "ৰাষ্ট্ৰীয় ঘাইপথত ভূমিস্খলন ধৰা পৰিছে। বিকল্প পথ উপলব্ধ।",
+    "speechText": "সতৰ্কবাৰ্তা। পথ অৱৰোধ। ৰাষ্ট্ৰীয় ঘাইপথত ভূমিস্খলন হৈছে। বিকল্প পথ গ্ৰহণ কৰক।",
+    "langCode": "as-IN"
+  },
+  "mni": {
+    "name": "Manipuri",
+    "nativeName": "মৈতৈলোন্ (Meetei)",
+    "alertTitle": "লম্বী থিংজিনখ্রে (BLOCKED)",
+    "alertSubtitle": "এন.এইচ. কোরিডোরদা ঈচিং-লৈবাক তুমখ্রে। অতোপ্পা লম্বী শিজিন্নবা য়াই।",
+    "speechText": "চেকশিনবা ৱাফম। লম্বী থিংজিনখ্রে। এন এইচ কোরিডোরদা ঈচিং লৈবাক তুমখ্রে। অতোপ্পা লম্বী শিজিন্নবীয়ু।",
+    "langCode": "bn-IN"
+  },
+  "lus": {
+    "name": "Mizo",
+    "nativeName": "Mizo ṭawng",
+    "alertTitle": "KAWNG KHAR A NI (BLOCKED)",
+    "alertSubtitle": "NH kawngah leimin a thleng. Kawng dang zawh tur a awm.",
+    "speechText": "Fimkhurna. Kawng khar a ni. NH kawngah leimin a thleng a, kawng dang B zawh a rawt a ni.",
+    "langCode": "en-IN"
+  },
+  "kha": {
+    "name": "Khasi",
+    "nativeName": "Ka Ktien Khasi",
+    "alertTitle": "KA SUROK LA KHANG (BLOCKED)",
+    "alertSubtitle": "Don ka jylliew ha surok bah NH. Ka surok ba la pynkhreh ka don.",
+    "speechText": "Maham. Ka surok bah NH la khang na ka daw ka jylliew khyndew. Sngewbha pyndonkam da ka surok B.",
+    "langCode": "en-IN"
+  },
+  "brx": {
+    "name": "Bodo",
+    "nativeName": "बर'",
+    "alertTitle": "लामा बन्द (BLOCKED)",
+    "alertSubtitle": "NH लामा सायाव हा खख्लैदों। गुबुन लामा मोननो हागोन।",
+    "speechText": "सावथ्रिखांथि। लामा बन्द। एन एच लामायाव हा खख्लैदों। गुबुन लामा बि बाहाय।",
+    "langCode": "hi-IN"
+  }
+}

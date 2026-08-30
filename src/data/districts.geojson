@@ -1,0 +1,105 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "id": "DIST-KAMRUP",
+      "properties": {
+        "id": "DIST-KAMRUP",
+        "name": "Kamrup Metropolitan",
+        "state": "Assam",
+        "status": "ACCESSIBLE",
+        "foodStockPercent": 92,
+        "medicineStockPercent": 88,
+        "constructionStockPercent": 85
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [91.5000, 26.3500],
+            [92.0000, 26.3500],
+            [92.0000, 26.0000],
+            [91.5000, 26.0000],
+            [91.5000, 26.3500]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "DIST-NAGAON",
+      "properties": {
+        "id": "DIST-NAGAON",
+        "name": "Nagaon",
+        "state": "Assam",
+        "status": "RESTRICTED",
+        "foodStockPercent": 75,
+        "medicineStockPercent": 52,
+        "constructionStockPercent": 70
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [92.4000, 26.5000],
+            [93.1000, 26.5000],
+            [93.1000, 25.9000],
+            [92.4000, 25.9000],
+            [92.4000, 26.5000]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "DIST-DIMA-HASAO",
+      "properties": {
+        "id": "DIST-DIMA-HASAO",
+        "name": "Dima Hasao (Haflong)",
+        "state": "Assam",
+        "status": "BLOCKED",
+        "foodStockPercent": 48,
+        "medicineStockPercent": 24,
+        "constructionStockPercent": 55
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [92.6000, 25.5000],
+            [93.3000, 25.5000],
+            [93.3000, 24.9500],
+            [92.6000, 24.9500],
+            [92.6000, 25.5000]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "DIST-CACHAR",
+      "properties": {
+        "id": "DIST-CACHAR",
+        "name": "Cachar (Silchar)",
+        "state": "Assam",
+        "status": "BLOCKED",
+        "foodStockPercent": 54,
+        "medicineStockPercent": 32,
+        "constructionStockPercent": 60
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [92.6000, 25.0000],
+            [93.1500, 25.0000],
+            [93.1500, 24.5000],
+            [92.6000, 24.5000],
+            [92.6000, 25.0000]
+          ]
+        ]
+      }
+    }
+  ]
+}
