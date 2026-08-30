@@ -68,10 +68,12 @@ function calculateBearing(start: [number, number], end: [number, number]): numbe
 
 interface MapViewProps {
   className?: string;
+  hideLayersButton?: boolean;
 }
 
 export const MapView: React.FC<MapViewProps> = ({
   className = 'w-full h-full',
+  hideLayersButton = false,
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -1127,7 +1129,8 @@ export const MapView: React.FC<MapViewProps> = ({
     <div className={`relative w-full h-full bg-[#FBF2E1] overflow-hidden select-none ${className}`}>
       <IntelligenceDock />
 
-      <div className="absolute top-2.5 left-2.5 z-20">
+      {!hideLayersButton && (
+        <div className="absolute top-2.5 left-2.5 z-20">
         <div className="relative">
           <button
             onClick={() => setLayersMenuOpen(!layersMenuOpen)}
@@ -1190,6 +1193,7 @@ export const MapView: React.FC<MapViewProps> = ({
           )}
         </div>
       </div>
+      )}
 
       <div className="absolute top-2.5 right-2.5 z-20 flex flex-col bg-white border border-[#E8D9BC] rounded-sm p-0.5" style={{backdropFilter:'blur(10px)', background:'rgba(255,255,255,.92)'}}>
         <button
