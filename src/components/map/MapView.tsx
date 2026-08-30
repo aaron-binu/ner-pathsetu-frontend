@@ -16,10 +16,11 @@ import riskZonesGeoJSON from '../../data/riskZones.geojson';
 import bridgesGeoJSON from '../../data/bridges.geojson';
 import incidentsGeoJSON from '../../data/incidents.geojson';
 import waterwaysGeoJSON from '../../data/waterways.geojson';
+import { getGolaghatBypassCoordinates } from '../../data/golaghatBypass';
+import { IntelligenceDock } from '../layout/IntelligenceDock';
 
 maplibregl.setWorkerUrl(maplibreWorkerUrl);
 
-// Free, open-source, watermark-free OpenStreetMap Humanitarian terrain basemap
 const MAP_STYLE: maplibregl.StyleSpecification = {
   version: 8,
   sources: {
@@ -45,8 +46,11 @@ const MAP_STYLE: maplibregl.StyleSpecification = {
   ],
 };
 
-const DEFAULT_CENTER: [number, number] = [93.1000, 26.1000];
-const DEFAULT_ZOOM = 7.2;
+const DEFAULT_CENTER: [number, number] = [93.1000, 26.3500];
+const DEFAULT_ZOOM = 7.3;
+
+const ORIGIN_COORDS: [number, number] = [91.738585, 26.184464];
+const DESTINATION_COORDS: [number, number] = [94.212008, 26.753952];
 
 function calculateBearing(start: [number, number], end: [number, number]): number {
   const startLat = (start[1] * Math.PI) / 180;
@@ -76,6 +80,35 @@ export const MapView: React.FC<MapViewProps> = ({
   const [mapLoaded, setMapLoaded] = useState(false);
   const [layersMenuOpen, setLayersMenuOpen] = useState(false);
 
+  const [bypassCoords, setBypassCoords] = useState<[number, number][]>(() => getGolaghatBypassCoordinates());
+
+  // Fetch real OpenStreetMap highway geometry from OSRM
+  useEffect(() => {
+    let isMounted = true;
+    const fetchOSRMRoute = async () => {
+      try {
+        const url =
+          'https://router.project-osrm.org/route/v1/driving/91.738585,26.184464;92.6841,26.3450;92.880,26.150;93.180,26.040;93.580,26.180;93.972,26.528;94.212008,26.753952?overview=full&geometries=geojson';
+        const res = await fetch(url);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.code === 'Ok' && data.routes && data.routes[0]?.geometry?.coordinates) {
+          const osrmCoords = data.routes[0].geometry.coordinates as [number, number][];
+          if (isMounted && osrmCoords.length > 50) {
+            setBypassCoords(osrmCoords);
+          }
+        }
+      } catch (err) {
+        console.warn('OSRM Live Route fallback active:', err);
+      }
+    };
+
+    fetchOSRMRoute();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const {
     layers,
     toggleLayer,
@@ -91,29 +124,18 @@ export const MapView: React.FC<MapViewProps> = ({
     isTrackingPlaying,
     updateVehiclePosition,
     leftSidebarOpen,
-    rightSidebarOpen
+    rightSidebarOpen,
+    simulationActive
   } = usePathSetuStore();
 
-  // Resize map when layout changes or tab switches
   useEffect(() => {
     if (mapRef.current) {
-      const t = setTimeout(() => mapRef.current?.resize(), 100);
-      const t2 = setTimeout(() => mapRef.current?.resize(), 400);
-      return () => { clearTimeout(t); clearTimeout(t2); };
+      setTimeout(() => {
+        mapRef.current?.resize();
+      }, 150);
     }
-  }, [leftSidebarOpen, rightSidebarOpen, mapLoaded]);
+  }, [leftSidebarOpen, rightSidebarOpen]);
 
-  // Keep map sized to its container (fixes 1/4 fill when parent has min-height)
-  useEffect(() => {
-    if (!mapRef.current || !mapContainerRef.current) return;
-    const ro = new ResizeObserver(() => mapRef.current?.resize());
-    ro.observe(mapContainerRef.current);
-    const wrap = mapContainerRef.current.parentElement;
-    if (wrap) ro.observe(wrap);
-    return () => ro.disconnect();
-  }, [mapLoaded]);
-
-  // Focus / fly to vehicle when explicitly clicked in sidebar
   useEffect(() => {
     if (!mapRef.current || !focusCoordinates) return;
     mapRef.current.flyTo({
@@ -139,7 +161,6 @@ export const MapView: React.FC<MapViewProps> = ({
       });
 
       map.on('load', () => {
-        // show map immediately, hide spinner on idle (tiles parsed)
         setMapLoaded(true);
 
         map.addSource('risk-zones-source', {
@@ -158,11 +179,11 @@ export const MapView: React.FC<MapViewProps> = ({
             'fill-color': [
               'match',
               ['get', 'riskLevel'],
-              'CRITICAL', '#C94F49',
-              'HIGH', '#D9A23A',
-              '#7CA36B',
+              'CRITICAL', '#dc2626',
+              'HIGH', '#ea580c',
+              '#d97706',
             ],
-            'fill-opacity': 0.14,
+            'fill-opacity': 0.12,
           },
         });
 
@@ -177,42 +198,13 @@ export const MapView: React.FC<MapViewProps> = ({
             'line-color': [
               'match',
               ['get', 'riskLevel'],
-              'CRITICAL', '#C94F49',
-              'HIGH', '#D9A23A',
-              '#7CA36B',
+              'CRITICAL', '#dc2626',
+              'HIGH', '#ea580c',
+              '#d97706',
             ],
             'line-width': 1.2,
             'line-dasharray': [2, 2],
           },
-        });
-
-        map.on('click', 'hazard-risk-fill', (e: any) => {
-          if (!e.features || !e.features[0]) return;
-          const props = e.features[0].properties as any;
-          new maplibregl.Popup({ offset: 10 })
-            .setLngLat(e.lngLat)
-            .setHTML(`
-              <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 4px 6px; min-width: 210px;">
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
-                  <span style="font-size: 10px; font-weight: 800; color: #dc2626; text-transform: uppercase; background: #fee2e2; padding: 2px 6px; border-radius: 4px;">
-                    ${props.riskLevel} HAZARD
-                  </span>
-                  <span style="font-size: 11px; font-weight: 800; color: #dc2626;">
-                    Score: ${props.riskScore}/100
-                  </span>
-                </div>
-                <div style="font-size: 12px; font-weight: 700; color: #0f172a; line-height: 1.3; margin-bottom: 4px;">
-                  ${props.name}
-                </div>
-                <div style="font-size: 11px; color: #475569; margin-bottom: 3px;">
-                  <b>Hazard Type:</b> ${props.hazardType}
-                </div>
-                <div style="font-size: 10px; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 4px; margin-top: 4px;">
-                  <b>Source:</b> ${props.source}
-                </div>
-              </div>
-            `)
-            .addTo(map);
         });
 
         map.addSource('waterways-source', {
@@ -231,18 +223,72 @@ export const MapView: React.FC<MapViewProps> = ({
             'line-join': 'round',
           },
           paint: {
-            'line-color': '#6C93A8',
-            'line-width': 2.8,
+            'line-color': '#0284c7',
+            'line-width': 2.5,
             'line-dasharray': [4, 2],
-            'line-opacity': 0.85,
+            'line-opacity': 0.75,
           },
+        });
+
+        const initialFeatures = roadsGeoJSON.features.map((feat: any) => {
+          if (feat.id === 'ALT-ROUTE-B') {
+            return {
+              ...feat,
+              properties: {
+                ...feat.properties,
+                name: 'Alternative Route B (Golaghat – Jorhat Bypass)',
+              },
+              geometry: {
+                type: 'LineString',
+                coordinates: bypassCoords,
+              },
+            };
+          }
+          return feat;
         });
 
         map.addSource('roads-source', {
           type: 'geojson',
-          data: roadsGeoJSON as any,
+          data: {
+            type: 'FeatureCollection',
+            features: initialFeatures,
+          },
         });
 
+        // 1. Road Under-Casing (adds GPS navigation ribbon outline)
+        map.addLayer({
+          id: 'road-casing-layer',
+          type: 'line',
+          source: 'roads-source',
+          layout: {
+            visibility: layers.roadAccessibility ? 'visible' : 'none',
+            'line-cap': 'round',
+            'line-join': 'round',
+          },
+          paint: {
+            'line-color': [
+              'match',
+              ['get', 'status'],
+              'BLOCKED', '#7f1d1d',
+              'REROUTED', '#064e3b',
+              'NORMAL_TRIP', '#065f46',
+              'RECOMMENDED', '#0369a1',
+              'transparent',
+            ],
+            'line-width': [
+              'match',
+              ['get', 'status'],
+              'BLOCKED', 8.5,
+              'REROUTED', 8.0,
+              'NORMAL_TRIP', 8.0,
+              'RECOMMENDED', 7.0,
+              0,
+            ],
+            'line-opacity': 0.7,
+          },
+        });
+
+        // 2. Main Navigation Road Ribbon Layer
         map.addLayer({
           id: 'road-accessibility-layer',
           type: 'line',
@@ -256,16 +302,30 @@ export const MapView: React.FC<MapViewProps> = ({
             'line-color': [
               'match',
               ['get', 'status'],
-              'BLOCKED', '#C94F49',
-              'RESTRICTED', '#D9A23A',
-              '#7CA36B',
+              'BLOCKED', '#ef4444',
+              'REROUTED', '#10b981',
+              'NORMAL_TRIP', '#10b981',
+              'RECOMMENDED', '#0284c7',
+              'RESTRICTED', '#f59e0b',
+              'BACKGROUND_DIM', '#64748b',
+              '#64748b',
             ],
             'line-width': [
               'match',
               ['get', 'status'],
-              'BLOCKED', 4.8,
-              'RESTRICTED', 4,
-              3.5,
+              'BLOCKED', 6.5,
+              'REROUTED', 6.0,
+              'NORMAL_TRIP', 6.0,
+              'RECOMMENDED', 5.0,
+              'RESTRICTED', 3.5,
+              'BACKGROUND_DIM', 2.8,
+              3.0,
+            ],
+            'line-opacity': [
+              'match',
+              ['get', 'status'],
+              'BACKGROUND_DIM', 0.7,
+              1.0,
             ],
           },
         });
@@ -274,8 +334,7 @@ export const MapView: React.FC<MapViewProps> = ({
           if (!e.features || !e.features[0]) return;
           const props = e.features[0].properties as any;
           const status = (props.status || 'OPEN').toUpperCase();
-          const statusColor = status === 'BLOCKED' ? '#ef4444' : status === 'RESTRICTED' ? '#f59e0b' : '#2563eb';
-          const isSimulated = props.isSimulated ? 'Simulated Prototype Data' : 'Verified Highway Network';
+          const statusColor = status === 'BLOCKED' ? '#ef4444' : status === 'REROUTED' || status === 'NORMAL_TRIP' ? '#10b981' : status === 'RECOMMENDED' ? '#0284c7' : '#2563eb';
 
           new maplibregl.Popup({ offset: 10 })
             .setLngLat(e.lngLat)
@@ -283,20 +342,20 @@ export const MapView: React.FC<MapViewProps> = ({
               <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 4px 6px; min-width: 210px;">
                 <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px;">
                   <span style="font-size: 10px; font-weight: 800; color: ${statusColor}; text-transform: uppercase; background: ${statusColor}18; padding: 2px 6px; border-radius: 4px; border: 1px solid ${statusColor}33;">
-                    ${status}
+                    ${status === 'NORMAL_TRIP' ? 'ACTIVE ROUTE' : status === 'BACKGROUND_DIM' ? 'OPEN' : status}
                   </span>
                   <span style="font-size: 9px; font-weight: 600; color: #64748b;">
-                    ${props.type || 'Road'}
+                    ${props.type || 'Corridor'}
                   </span>
                 </div>
                 <div style="font-size: 12px; font-weight: 700; color: #0f172a; line-height: 1.3; margin-bottom: 4px;">
                   ${props.name}
                 </div>
                 <div style="font-size: 11px; color: #475569; margin-bottom: 3px;">
-                  <b>Length:</b> ${props.lengthKm} km | <b>Criticality:</b> ${props.criticality || 'NORMAL'}
+                  <b>Length:</b> ${props.lengthKm} km | <b>Criticality:</b> ${props.criticality || 'HIGH'}
                 </div>
                 <div style="font-size: 10px; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 4px; margin-top: 4px;">
-                  <b>Source:</b> ${props.source || isSimulated}
+                  <b>Destination:</b> Jorhat Central Hospital, Upper Assam
                 </div>
               </div>
             `)
@@ -320,7 +379,7 @@ export const MapView: React.FC<MapViewProps> = ({
             'line-join': 'round',
           },
           paint: {
-            'line-color': '#6C93A8',
+            'line-color': '#10b981',
             'line-width': 3.5,
             'line-opacity': 0.8,
             'line-dasharray': [2, 2],
@@ -337,7 +396,6 @@ export const MapView: React.FC<MapViewProps> = ({
           });
         });
       });
-      map.on('idle', () => setMapLoaded(true));
 
       mapRef.current = map;
     } catch (err) {
@@ -363,6 +421,9 @@ export const MapView: React.FC<MapViewProps> = ({
       }
       if (map.getLayer('road-accessibility-layer')) {
         map.setLayoutProperty('road-accessibility-layer', 'visibility', layers.roadAccessibility ? 'visible' : 'none');
+        if (map.getLayer('road-casing-layer')) {
+          map.setLayoutProperty('road-casing-layer', 'visibility', layers.roadAccessibility ? 'visible' : 'none');
+        }
       }
       if (map.getLayer('waterways-corridor-layer')) {
         map.setLayoutProperty('waterways-corridor-layer', 'visibility', layers.waterways ? 'visible' : 'none');
@@ -375,6 +436,7 @@ export const MapView: React.FC<MapViewProps> = ({
     }
   }, [layers, mapLoaded]);
 
+  // Synchronize dynamic Google Maps-style navigation paths with genuine OSM geometry
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapLoaded) return;
@@ -382,13 +444,58 @@ export const MapView: React.FC<MapViewProps> = ({
     try {
       const source = map.getSource('roads-source') as maplibregl.GeoJSONSource;
       if (source) {
-        const updatedFeatures = roadsGeoJSON.features.map((feat: any) => ({
-          ...feat,
-          properties: {
-            ...feat.properties,
-            status: roadStatuses[feat.id] || feat.properties.status,
-          },
-        }));
+        const veh104 = vehicles.find((v) => v.id === 'VEH-104');
+        const isRerouted = veh104?.rerouteAccepted;
+        const isAtRisk = veh104?.routeAtRisk;
+
+        const updatedFeatures = roadsGeoJSON.features.map((feat: any) => {
+          let status = roadStatuses[feat.id] || feat.properties.status;
+
+          if (!simulationActive) {
+            // Normal State: NH-37 is the single active green navigation corridor, others dimmed
+            if (feat.id === 'NH-37') {
+              status = 'NORMAL_TRIP';
+            } else {
+              status = 'BACKGROUND_DIM';
+            }
+          } else {
+            // Disruption Active:
+            if (feat.id === 'NH-37') {
+              status = 'BLOCKED'; // Primary path turns Red
+            } else if (feat.id === 'ALT-ROUTE-B') {
+              if (isRerouted) {
+                status = 'REROUTED'; // Active bypass turns Green
+              } else {
+                status = 'RECOMMENDED'; // Recommended detour in Cyan
+              }
+            } else {
+              status = 'BACKGROUND_DIM'; // Irrelevant regional roads dimmed
+            }
+          }
+
+          if (feat.id === 'ALT-ROUTE-B') {
+            return {
+              ...feat,
+              properties: {
+                ...feat.properties,
+                name: 'Alternative Route B (Golaghat – Jorhat Bypass)',
+                status,
+              },
+              geometry: {
+                type: 'LineString',
+                coordinates: bypassCoords,
+              },
+            };
+          }
+
+          return {
+            ...feat,
+            properties: {
+              ...feat.properties,
+              status,
+            },
+          };
+        });
 
         source.setData({
           type: 'FeatureCollection',
@@ -398,8 +505,9 @@ export const MapView: React.FC<MapViewProps> = ({
     } catch (e) {
       console.warn('Road status update error:', e);
     }
-  }, [roadStatuses, mapLoaded]);
+  }, [roadStatuses, vehicles, simulationActive, bypassCoords, mapLoaded]);
 
+  // Dynamic Navigation Origin and Destination Pins (Displayed when VEH-104 is selected)
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapLoaded) return;
@@ -407,11 +515,71 @@ export const MapView: React.FC<MapViewProps> = ({
     Object.values(customGisMarkersRef.current).forEach((m) => m.remove());
     customGisMarkersRef.current = {};
 
+    // 1. Dynamic Origin & Destination Pins for active selected vehicle (VEH-104)
+    if (selectedVehicleId === 'VEH-104') {
+      const originEl = document.createElement('div');
+      originEl.className = 'cursor-pointer select-none transition-transform hover:scale-110';
+      originEl.innerHTML = `
+        <div style="display: flex; flex-direction: column; align-items: center; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.3));">
+          <div style="background: #0f172a; color: white; border: 1.5px solid #3b82f6; border-radius: 6px; padding: 2px 7px; font-size: 9px; font-weight: 800; white-space: nowrap; display: flex; align-items: center; gap: 3px;">
+            <span>🚩</span>
+            <span>START: Guwahati Depot</span>
+          </div>
+          <div style="width: 2px; height: 6px; background: #3b82f6;"></div>
+        </div>
+      `;
+      originEl.addEventListener('click', () => {
+        new maplibregl.Popup({ offset: 10 })
+          .setLngLat(ORIGIN_COORDS)
+          .setHTML(`
+            <div style="font-family: -apple-system, BlinkMacSystemFont, sans-serif; padding: 4px;">
+              <b style="color: #2563eb; font-size: 11px;">🚩 Convoys Dispatch Terminal</b>
+              <div style="font-size: 12px; font-weight: bold; margin-top: 2px;">Guwahati Central Logistics Hub</div>
+              <div style="font-size: 10px; color: #64748b; margin-top: 2px;">Origin for VEH-104 (Emergency Medicine Convoy)</div>
+            </div>
+          `)
+          .addTo(map);
+      });
+      const originMarker = new maplibregl.Marker({ element: originEl, anchor: 'bottom' })
+        .setLngLat(ORIGIN_COORDS)
+        .addTo(map);
+      customGisMarkersRef.current['nav-origin'] = originMarker;
+
+      const destEl = document.createElement('div');
+      destEl.className = 'cursor-pointer select-none transition-transform hover:scale-110';
+      destEl.innerHTML = `
+        <div style="display: flex; flex-direction: column; align-items: center; filter: drop-shadow(0 4px 12px rgba(0,0,0,0.35));">
+          <div style="background: #0f172a; color: white; border: 2px solid #10b981; border-radius: 7px; padding: 3px 9px; font-size: 10px; font-weight: 900; white-space: nowrap; display: flex; align-items: center; gap: 4px; box-shadow: 0 0 14px rgba(16, 185, 129, 0.5);">
+            <span style="font-size: 12px;">📍</span>
+            <span>DESTINATION: Jorhat Central Hospital</span>
+          </div>
+          <div style="width: 2px; height: 8px; background: #10b981;"></div>
+          <div style="width: 6px; height: 6px; border-radius: 9999px; background: #10b981; border: 1.5px solid white;"></div>
+        </div>
+      `;
+      destEl.addEventListener('click', () => {
+        new maplibregl.Popup({ offset: 10 })
+          .setLngLat(DESTINATION_COORDS)
+          .setHTML(`
+            <div style="font-family: -apple-system, BlinkMacSystemFont, sans-serif; padding: 4px;">
+              <b style="color: #10b981; font-size: 11px;">📍 Final Delivery Target</b>
+              <div style="font-size: 12px; font-weight: bold; margin-top: 2px;">Jorhat Central Hospital, Upper Assam</div>
+              <div style="font-size: 10px; color: #64748b; margin-top: 2px;">Target destination for Emergency Medicine delivery via NH-37 / Golaghat corridor.</div>
+            </div>
+          `)
+          .addTo(map);
+      });
+      const destMarker = new maplibregl.Marker({ element: destEl, anchor: 'bottom' })
+        .setLngLat(DESTINATION_COORDS)
+        .addTo(map);
+      customGisMarkersRef.current['nav-dest'] = destMarker;
+    }
+
     if (layers.bridges) {
       bridgesGeoJSON.features.forEach((feat: any) => {
         const props = feat.properties;
         const el = document.createElement('div');
-        el.className = 'cursor-pointer select-none ';
+        el.className = 'cursor-pointer select-none transition-transform hover:scale-125';
         el.innerHTML = `
           <div style="width: 26px; height: 26px; border-radius: 9999px; background: #1d4ed8; color: white; display: flex; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.25);">
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -462,19 +630,22 @@ export const MapView: React.FC<MapViewProps> = ({
         const color = isBlocked ? '#dc2626' : '#ea580c';
 
         const el = document.createElement('div');
-        el.className = 'cursor-pointer select-none ';
+        el.className = 'cursor-pointer select-none transition-transform hover:scale-125';
         el.innerHTML = `
-          <div style="display: flex; align-items: center; gap: 4px; background: white; border: 1.5px solid ${color}; border-radius: 9999px; padding: 2px 8px 2px 3px; box-shadow: 0 3px 6px rgba(0,0,0,0.2);">
-            <div style="width: 18px; height: 18px; border-radius: 9999px; background: ${color}; color: white; display: flex; align-items: center; justify-content: center;">
-              <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
-                <line x1="12" y1="9" x2="12" y2="13"/>
-                <line x1="12" y1="17" x2="12.01" y2="17"/>
-              </svg>
+          <div style="position: relative; display: flex; align-items: center; justify-content: center;">
+            ${isBlocked ? `<div style="position: absolute; width: 44px; height: 44px; border-radius: 9999px; background: rgba(239, 68, 68, 0.35); border: 2px solid #ef4444; animation: ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>` : ''}
+            <div style="display: flex; align-items: center; gap: 5px; background: white; border: 2px solid ${color}; border-radius: 9999px; padding: 3px 10px 3px 4px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 10;">
+              <div style="width: 20px; height: 20px; border-radius: 9999px; background: ${color}; color: white; display: flex; align-items: center; justify-content: center;">
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+                  <line x1="12" y1="9" x2="12" y2="13"/>
+                  <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+              </div>
+              <span style="font-size: 11px; font-weight: 900; color: #0f172a; white-space: nowrap; letter-spacing: -0.2px;">
+                ${feat.type.toUpperCase()}: ${feat.roadStatus}
+              </span>
             </div>
-            <span style="font-size: 10px; font-weight: 800; color: #0f172a; white-space: nowrap;">
-              ${feat.type}
-            </span>
           </div>
         `;
 
@@ -522,7 +693,7 @@ export const MapView: React.FC<MapViewProps> = ({
         if (feat.geometry.type !== 'Point') return;
         const props = feat.properties;
         const el = document.createElement('div');
-        el.className = 'cursor-pointer select-none ';
+        el.className = 'cursor-pointer select-none transition-transform hover:scale-125';
         el.innerHTML = `
           <div style="width: 24px; height: 24px; border-radius: 9999px; background: #0284c7; color: white; display: flex; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.25);">
             <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -562,7 +733,7 @@ export const MapView: React.FC<MapViewProps> = ({
         customGisMarkersRef.current[`port-${feat.id}`] = marker;
       });
     }
-  }, [layers.bridges, layers.incidents, layers.waterways, mapLoaded]);
+  }, [layers.bridges, layers.incidents, layers.waterways, selectedVehicleId, mapLoaded]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -578,7 +749,10 @@ export const MapView: React.FC<MapViewProps> = ({
       const isCritical = veh.priority === 'CRITICAL';
       const isHigh = veh.priority === 'HIGH';
       const isSelected = selectedVehicleId === veh.id;
-      const priorityColor = isCritical ? '#C94F49' : isHigh ? '#D9A23A' : '#7CA36B';
+      const isRerouted = veh.rerouteAccepted;
+      const isAtRisk = veh.routeAtRisk;
+
+      const priorityColor = isAtRisk ? '#dc2626' : isRerouted ? '#10b981' : isCritical ? '#dc2626' : isHigh ? '#ea580c' : '#2563eb';
       const bearing = veh.bearing || 0;
 
       if (vehicleMarkersRef.current[veh.id]) {
@@ -588,12 +762,16 @@ export const MapView: React.FC<MapViewProps> = ({
         const iconSvg = markerEl.querySelector('.truck-dir-icon') as HTMLElement;
         if (iconSvg) {
           iconSvg.style.transform = `rotate(${bearing}deg)`;
+          iconSvg.style.background = priorityColor;
         }
-        const puck = markerEl.querySelector('.truck-dir-icon') as HTMLElement;
-        if (puck) {
-          puck.style.boxShadow = isSelected
-            ? `0 0 0 2px white, 0 0 0 4px ${priorityColor}, 0 1px 4px rgba(0,0,0,0.3)`
-            : `0 1px 4px rgba(0,0,0,0.3)`;
+
+        const radarHalo = markerEl.querySelector('.radar-halo') as HTMLElement;
+        if (radarHalo) {
+          radarHalo.style.display = (isSelected || isAtRisk) ? 'block' : 'none';
+          if (isAtRisk) {
+            radarHalo.style.borderColor = '#ef4444';
+            radarHalo.style.background = 'rgba(239, 68, 68, 0.35)';
+          }
         }
       } else {
         const el = document.createElement('div');
@@ -601,12 +779,14 @@ export const MapView: React.FC<MapViewProps> = ({
         el.style.zIndex = '50';
 
         el.innerHTML = `
-          <div style="font-size: 9px; font-weight: 600; color: #2A211A; background: white; border: 1px solid ${priorityColor}; border-radius: 4px; padding: 1px 5px; margin-bottom: 2px; box-shadow: 0 1px 2px rgba(0,0,0,0.12); white-space: nowrap; font-family: IBM Plex Mono, monospace;">
-            ${veh.id}
+          <div style="font-size: 9px; font-weight: 800; color: #0f172a; background: white; border: 1.5px solid ${priorityColor}; border-radius: 4px; padding: 1px 5px; margin-bottom: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.2); white-space: nowrap;">
+            ${veh.id} ${isAtRisk ? '⚠️' : isRerouted ? '✅' : ''}
           </div>
+
           <div style="position: relative; display: flex; align-items: center; justify-content: center;">
-            <div class="truck-dir-icon" style="width: 20px; height: 20px; border-radius: 9999px; background: ${priorityColor}; color: white; display: flex; align-items: center; justify-content: center; border: 1.5px solid white; box-shadow: ${isSelected ? `0 0 0 2px white, 0 0 0 4px ${priorityColor}, 0 1px 4px rgba(0,0,0,0.3)` : `0 1px 4px rgba(0,0,0,0.3)`}; transition: transform 0.25s ease; transform: rotate(${bearing}deg);">
-              <svg viewBox="0 0 24 24" width="10" height="10" fill="currentColor">
+            <div class="radar-halo" style="display: ${(isSelected || isAtRisk) ? 'block' : 'none'}; position: absolute; width: 36px; height: 36px; border-radius: 9999px; background: ${isAtRisk ? 'rgba(239, 68, 68, 0.35)' : 'rgba(59, 130, 246, 0.3)'}; border: 1.5px solid ${isAtRisk ? '#ef4444' : '#3b82f6'}; animation: ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
+            <div class="truck-dir-icon" style="width: 22px; height: 22px; border-radius: 9999px; background: ${priorityColor}; color: white; display: flex; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3); transition: transform 0.3s ease; transform: rotate(${bearing}deg);">
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
                 <path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"/>
               </svg>
             </div>
@@ -623,7 +803,7 @@ export const MapView: React.FC<MapViewProps> = ({
               <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 4px 6px; min-width: 220px;">
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
                   <span style="font-size: 10px; font-weight: 800; color: ${priorityColor}; text-transform: uppercase; background: ${priorityColor}18; padding: 2px 6px; border-radius: 4px;">
-                    ${veh.priority}
+                    ${isAtRisk ? 'ROUTE AT RISK' : isRerouted ? 'REROUTED' : veh.priority}
                   </span>
                   <span style="font-size: 10px; font-weight: 800; color: #2563eb; background: #eff6ff; padding: 2px 6px; border-radius: 4px;">
                     ETA: ${veh.eta}
@@ -680,7 +860,7 @@ export const MapView: React.FC<MapViewProps> = ({
     if (!isTrackingPlaying) return;
 
     const nh37Coords = roadsGeoJSON.features.find((f: any) => f.id === 'NH-37')?.geometry.coordinates as [number, number][];
-    const altRouteBCoords = roadsGeoJSON.features.find((f: any) => f.id === 'ALT-ROUTE-B')?.geometry.coordinates as [number, number][];
+    const altRouteBCoords = bypassCoords;
     const nh29Coords = roadsGeoJSON.features.find((f: any) => f.id === 'NH-29')?.geometry.coordinates as [number, number][];
     const nh6Coords = roadsGeoJSON.features.find((f: any) => f.id === 'NH-6')?.geometry.coordinates as [number, number][];
 
@@ -688,25 +868,64 @@ export const MapView: React.FC<MapViewProps> = ({
 
     const interval = setInterval(() => {
       animStepRef.current = (animStepRef.current + 1) % 600;
-      const progress = (animStepRef.current % 600) / 600;
 
       const veh104 = vehicles.find((v) => v.id === 'VEH-104');
-      const isRerouted104 = veh104?.currentRouteId === 'ALT-ROUTE-B';
-      const activeCoords104 = isRerouted104 ? altRouteBCoords : nh37Coords;
+      const isRerouted104 = veh104?.rerouteAccepted;
+      const isAtRisk104 = veh104?.routeAtRisk;
 
-      const idx104 = Math.floor(progress * (activeCoords104.length - 1));
-      if (activeCoords104[idx104] && activeCoords104[idx104 + 1]) {
-        const p1 = activeCoords104[idx104];
-        const p2 = activeCoords104[idx104 + 1];
-        const brng = calculateBearing(p1, p2);
+      if (isRerouted104) {
+        // Continuous, smooth forward motion along OpenStreetMap ALT-ROUTE-B from Nagaon Junction (~30%) through Golaghat into Jorhat (98%)
+        const rerouteProgress = 0.30 + ((animStepRef.current % 400) / 400) * 0.68;
+        const idx104 = Math.min(Math.floor(rerouteProgress * (altRouteBCoords.length - 1)), altRouteBCoords.length - 2);
+
+        if (altRouteBCoords[idx104] && altRouteBCoords[idx104 + 1]) {
+          const p1 = altRouteBCoords[idx104];
+          const p2 = altRouteBCoords[idx104 + 1];
+          const brng = calculateBearing(p1, p2);
+
+          let segmentName = 'ALT-ROUTE-B (Golaghat Bypass)';
+          if (rerouteProgress < 0.55) {
+            segmentName = 'ALT-ROUTE-B (Hojai–Doboka Detour)';
+          } else if (rerouteProgress < 0.85) {
+            segmentName = 'ALT-ROUTE-B (Golaghat Sector Bypass)';
+          } else {
+            segmentName = 'ALT-ROUTE-B (Arriving at Jorhat Central Hospital)';
+          }
+
+          updateVehiclePosition('VEH-104', p1, {
+            bearing: brng,
+            currentLocationName: segmentName,
+            speedKmh: 46 + Math.floor(Math.sin(animStepRef.current) * 4),
+          });
+        }
+      } else if (isAtRisk104) {
+        // Halted right before the blockage near Nagaon/Kaziranga
+        const p1: [number, number] = [92.6841, 26.3450];
         updateVehiclePosition('VEH-104', p1, {
-          bearing: brng,
-          currentLocationName: isRerouted104 ? 'ALT-ROUTE-B (Haflong Bypass)' : 'NH-37 Corridor',
-          speedKmh: 48 + Math.floor(Math.sin(animStepRef.current) * 6),
+          bearing: 90,
+          currentLocationName: 'NH-37 (Halted at Nagaon Junction — Blockage Ahead)',
+          speedKmh: 0,
         });
+      } else {
+        // Normal travel along NH-37 (Guwahati to Nagaon / Kaziranga)
+        const normalProgress = ((animStepRef.current % 400) / 400) * 0.45;
+        const idx104 = Math.min(Math.floor(normalProgress * (nh37Coords.length - 1)), nh37Coords.length - 2);
+
+        if (nh37Coords[idx104] && nh37Coords[idx104 + 1]) {
+          const p1 = nh37Coords[idx104];
+          const p2 = nh37Coords[idx104 + 1];
+          const brng = calculateBearing(p1, p2);
+          updateVehiclePosition('VEH-104', p1, {
+            bearing: brng,
+            currentLocationName: 'NH-37 (Guwahati–Nagaon Corridor)',
+            speedKmh: 50 + Math.floor(Math.sin(animStepRef.current) * 5),
+          });
+        }
       }
 
-      const idx409 = Math.floor(progress * (nh29Coords.length - 1));
+      // VEH-409 on NH-29 (Dimapur to Kohima)
+      const progress409 = (animStepRef.current % 500) / 500;
+      const idx409 = Math.min(Math.floor(progress409 * (nh29Coords.length - 1)), nh29Coords.length - 2);
       if (nh29Coords[idx409] && nh29Coords[idx409 + 1]) {
         const p1 = nh29Coords[idx409];
         const p2 = nh29Coords[idx409 + 1];
@@ -718,7 +937,9 @@ export const MapView: React.FC<MapViewProps> = ({
         });
       }
 
-      const idx312 = Math.floor(progress * (nh6Coords.length - 1));
+      // VEH-312 on NH-6 (Guwahati to Shillong)
+      const progress312 = (animStepRef.current % 450) / 450;
+      const idx312 = Math.min(Math.floor(progress312 * (nh6Coords.length - 1)), nh6Coords.length - 2);
       if (nh6Coords[idx312] && nh6Coords[idx312 + 1]) {
         const p1 = nh6Coords[idx312];
         const p2 = nh6Coords[idx312 + 1];
@@ -732,67 +953,53 @@ export const MapView: React.FC<MapViewProps> = ({
     }, 1200);
 
     return () => clearInterval(interval);
-  }, [isTrackingPlaying, updateVehiclePosition]);
+  }, [isTrackingPlaying, vehicles, updateVehiclePosition, bypassCoords]);
 
   return (
-    <div className={`relative w-full h-full bg-[#FBF2E1] overflow-hidden select-none ${className}`}>
-      <div className="absolute top-2.5 left-2.5 z-20">
+    <div className={`relative ${className} bg-slate-100 overflow-hidden select-none`}>
+      <IntelligenceDock />
+
+      <div className="absolute top-3.5 left-3.5 z-20">
         <div className="relative">
           <button
             onClick={() => setLayersMenuOpen(!layersMenuOpen)}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm bg-white border border-[#E8D9BC] text-xs font-semibold text-[#2A211A] hover:bg-[#FBF2E1] transition-colors"
-            style={{backdropFilter:'blur(10px)', background:'rgba(255,255,255,.92)'}}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/95 backdrop-blur-sm border border-slate-200 shadow-sm text-xs font-bold text-slate-800 hover:bg-white transition-all"
           >
-            <Layers className="w-3.5 h-3.5 text-[#6E6252]" />
-            <span>Layers</span>
-            <ChevronDown className={`w-3 h-3 text-[#9C8F78] transition-transform ${layersMenuOpen ? 'rotate-180' : ''}`} />
+            <Layers className="w-3.5 h-3.5 text-blue-600" />
+            <span>MAP LAYERS</span>
+            <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${layersMenuOpen ? 'rotate-180' : ''}`} />
           </button>
 
           {layersMenuOpen && (
-            <div className="absolute top-full left-0 mt-1 w-[260px] bg-white border border-[#E8D9BC] rounded-sm p-1.5 z-30 text-xs animate-fadeIn" style={{boxShadow:'0 16px 36px -12px rgba(42,33,26,.25)'}}>
-              <div style={{padding:'4px 6px 6px',fontSize:'10px',fontWeight:700,letterSpacing:'.6px',color:'var(--text-faint)',textTransform:'uppercase'}}>Default</div>
+            <div className="absolute top-full left-0 mt-1.5 w-52 bg-white/95 backdrop-blur-md border border-slate-200 rounded-xl shadow-lg p-2.5 space-y-2 z-30 text-xs animate-fadeIn">
               {[
-                { key: 'roadAccessibility', label: 'Road Network', sw:'#A69A8A' },
-                { key: 'roadAccessibility', label: 'Road Status', sw:'#7CA36B' },
-                { key: 'hazardRisk', label: 'Risk Intensity', sw:'#C94F49' },
-              ].map(({ key, label, sw }) => {
+                { key: 'hazardRisk', label: 'Hazard Risk' },
+                { key: 'roadAccessibility', label: 'Road Accessibility' },
+                { key: 'bridges', label: 'Bridges' },
+                { key: 'activeVehicles', label: 'Active Vehicles' },
+                { key: 'incidents', label: 'Incidents' },
+                { key: 'waterways', label: 'Waterways' },
+              ].map(({ key, label }) => {
                 const isChecked = layers[key as keyof typeof layers];
                 return (
-                  <label key={label} className="layer-chip" style={{margin:'1px 0', padding:'6px 8px'}}>
-                    <input type="checkbox" checked={isChecked} onChange={()=>toggleLayer(key as keyof typeof layers)} />
-                    <span className="swatch" style={{background:sw}}></span>{label}<span className="check"></span>
-                  </label>
-                );
-              })}
-              <div style={{height:1,background:'var(--border-soft)',margin:'6px 0'}}></div>
-              <div style={{padding:'4px 6px 6px',fontSize:'10px',fontWeight:700,letterSpacing:'.6px',color:'var(--text-faint)',textTransform:'uppercase'}}>Hazard</div>
-              {[
-                { key: 'waterways', label: 'Waterways', sw:'#6C93A8' },
-                { key: 'hazardRisk', label: 'Landslide Zones', sw:'#B97A4E' },
-                { key: 'hazardRisk', label: 'Ground Movement', sw:'#B08FB0' },
-              ].map(({ key, label, sw }) => {
-                const isChecked = layers[key as keyof typeof layers];
-                return (
-                  <label key={label} className="layer-chip" style={{margin:'1px 0', padding:'6px 8px'}}>
-                    <input type="checkbox" checked={isChecked} onChange={()=>toggleLayer(key as keyof typeof layers)} />
-                    <span className="swatch" style={{background:sw}}></span>{label}<span className="check"></span>
-                  </label>
-                );
-              })}
-              <div style={{height:1,background:'var(--border-soft)',margin:'6px 0'}}></div>
-              <div style={{padding:'4px 6px 6px',fontSize:'10px',fontWeight:700,letterSpacing:'.6px',color:'var(--text-faint)',textTransform:'uppercase'}}>Infrastructure</div>
-              {[
-                { key: 'bridges', label: 'Bridges', sw:'#ADA08D' },
-                { key: 'activeVehicles', label: 'Vehicles', sw:'#E2726B' },
-                { key: 'incidents', label: 'Incidents', sw:'#C94F49' },
-                { key: 'waterways', label: 'Ferry Terminals', sw:'#6C93A8' },
-              ].map(({ key, label, sw }) => {
-                const isChecked = layers[key as keyof typeof layers];
-                return (
-                  <label key={label} className="layer-chip" style={{margin:'1px 0', padding:'6px 8px'}}>
-                    <input type="checkbox" checked={isChecked} onChange={()=>toggleLayer(key as keyof typeof layers)} />
-                    <span className="swatch" style={{background:sw}}></span>{label}<span className="check"></span>
-                  </label>
+                  <div
+                    key={key}
+                    onClick={() => toggleLayer(key as keyof typeof layers)}
+                    className="flex items-center justify-between cursor-pointer hover:bg-slate-50 p-1 rounded-md transition-colors"
+                  >
+                    <span className="font-semibold text-slate-700 text-[11px]">{label}</span>
+                    <div
+                      className={`w-7 h-4 rounded-full transition-colors relative flex items-center p-0.5 ${
+                        isChecked ? 'bg-blue-600' : 'bg-slate-300'
+                      }`}
+                    >
+                      <div
+                        className={`w-3 h-3 rounded-full bg-white shadow-xs transition-transform ${
+                          isChecked ? 'translate-x-3' : 'translate-x-0'
+                        }`}
+                      />
+                    </div>
+                  </div>
                 );
               })}
             </div>
@@ -800,31 +1007,31 @@ export const MapView: React.FC<MapViewProps> = ({
         </div>
       </div>
 
-      <div className="absolute top-2.5 right-2.5 z-20 flex flex-col bg-white border border-[#E8D9BC] rounded-sm p-0.5" style={{backdropFilter:'blur(10px)', background:'rgba(255,255,255,.92)'}}>
+      <div className="absolute top-3.5 right-3.5 z-20 flex flex-col gap-1 bg-white/95 backdrop-blur-sm border border-slate-200 rounded-lg p-1 shadow-sm">
         <button
           onClick={() => mapRef.current?.zoomIn()}
-          className="w-7 h-7 flex items-center justify-center hover:bg-[#FBF2E1] rounded-sm text-[#6E6252] hover:text-[#2A211A]"
-          title="Zoom in"
+          className="p-1.5 hover:bg-slate-100 rounded text-slate-600 hover:text-slate-900 transition-colors"
+          title="Zoom In"
         >
           <Plus className="w-3.5 h-3.5" />
         </button>
         <button
           onClick={() => mapRef.current?.zoomOut()}
-          className="w-7 h-7 flex items-center justify-center hover:bg-[#FBF2E1] rounded-sm text-[#6E6252] hover:text-[#2A211A] border-t border-[#F1E6CE]"
-          title="Zoom out"
+          className="p-1.5 hover:bg-slate-100 rounded text-slate-600 hover:text-slate-900 border-t border-slate-100 transition-colors"
+          title="Zoom Out"
         >
           <Minus className="w-3.5 h-3.5" />
         </button>
         <button
           onClick={() => mapRef.current?.resetNorthPitch()}
-          className="w-7 h-7 flex items-center justify-center hover:bg-[#FBF2E1] rounded-sm text-[#6E6252] hover:text-[#2A211A] border-t border-[#F1E6CE]"
-          title="Reset north"
+          className="p-1.5 hover:bg-slate-100 rounded text-slate-600 hover:text-slate-900 border-t border-slate-100 transition-colors"
+          title="Reset North"
         >
           <Compass className="w-3.5 h-3.5" />
         </button>
         <button
           onClick={() => mapRef.current?.flyTo({ center: DEFAULT_CENTER, zoom: DEFAULT_ZOOM })}
-          className="w-7 h-7 flex items-center justify-center hover:bg-[#FBF2E1] rounded-sm text-[#6E6252] hover:text-[#2A211A] border-t border-[#F1E6CE]"
+          className="p-1.5 hover:bg-slate-100 rounded text-slate-600 hover:text-slate-900 border-t border-slate-100 transition-colors"
           title="Recenter"
         >
           <Crosshair className="w-3.5 h-3.5" />
@@ -832,30 +1039,30 @@ export const MapView: React.FC<MapViewProps> = ({
       </div>
 
       <div ref={mapContainerRef} className="w-full h-full" />
-      {!mapLoaded && (
-        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3" style={{background:'var(--ink-2)'}}>
-          <div className="w-7 h-7 rounded-full border-[3px] border-[var(--border)] border-t-[var(--brand)]" style={{animation:'spin .8s linear infinite'}}></div>
-          <div style={{fontSize:'12px', color:'var(--text-faint)'}}>Loading terrain map…</div>
-        </div>
-      )}
 
-      <div className="absolute bottom-2.5 left-2.5 z-20 bg-white border border-[#E8D9BC] rounded-sm px-2.5 py-1.5 flex items-center gap-3 text-[11px] font-medium text-[#6E6252]" style={{backdropFilter:'blur(10px)', background:'rgba(255,251,244,.78)'}}>
-        <span className="flex items-center gap-1.5">
-          <span className="w-3 h-0.5" style={{background:'#7CA36B'}} aria-hidden />
-          Open
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="w-3 h-0.5" style={{background:'#D9A23A'}} aria-hidden />
-          Restricted
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="w-3 h-0.5" style={{background:'#C94F49'}} aria-hidden />
-          Blocked
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="w-3 h-0.5" style={{background:'#6C93A8'}} aria-hidden />
-          Recommended
-        </span>
+      {/* Modern GPS Navigation Legend */}
+      <div className="absolute bottom-4 left-3.5 z-20 bg-white/95 backdrop-blur-sm border border-slate-200 px-3.5 py-2.5 rounded-xl shadow-md text-xs text-slate-700 flex items-center gap-3.5">
+        {!simulationActive ? (
+          <div className="flex items-center gap-1.5">
+            <span className="w-3.5 h-1.5 bg-emerald-500 rounded-full"></span>
+            <span className="text-[11px] font-bold text-emerald-700">Active Navigation (Guwahati ➔ Jorhat)</span>
+          </div>
+        ) : (
+          <>
+            <div className="flex items-center gap-1.5">
+              <span className="w-3.5 h-1.5 bg-red-600 rounded-full"></span>
+              <span className="text-[11px] font-bold text-red-700">Blocked (NH-37 Kaziranga)</span>
+            </div>
+            <div className="flex items-center gap-1.5 pl-2.5 border-l border-slate-200">
+              <span className="w-3.5 h-1.5 bg-emerald-500 rounded-full"></span>
+              <span className="text-[11px] font-bold text-emerald-700">OSM Bypass (ALT-ROUTE-B via Golaghat)</span>
+            </div>
+          </>
+        )}
+        <div className="flex items-center gap-1.5 pl-2.5 border-l border-slate-200">
+          <span className="w-3.5 h-1.5 bg-slate-500 rounded-full"></span>
+          <span className="text-[11px] font-bold text-slate-600">Other Roads (Slate Grey)</span>
+        </div>
       </div>
     </div>
   );

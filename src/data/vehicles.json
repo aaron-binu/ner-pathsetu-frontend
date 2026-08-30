@@ -5,7 +5,7 @@
     "cargo": "Emergency Medicine",
     "priority": "CRITICAL",
     "eta": "5h 05m",
-    "destination": "Jiribam Sub-Divisional Hospital, Manipur",
+    "destination": "Jorhat Central Hospital, Upper Assam",
     "coordinates": [92.6841, 26.3450],
     "gpsStatus": "SIMULATED",
     "gpsSignal": "LIVE",
