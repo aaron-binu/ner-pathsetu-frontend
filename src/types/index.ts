@@ -1,7 +1,7 @@
 export type PriorityLevel = 'CRITICAL' | 'HIGH' | 'NORMAL' | 'LOW';
 export type RoadStatus = 'OPEN' | 'RESTRICTED' | 'BLOCKED' | 'REROUTED' | 'RECOMMENDED' | 'NORMAL_TRIP' | 'BACKGROUND_DIM';
 export type SyncStatus = 'PENDING' | 'SYNCING' | 'SYNCED';
-export type LanguageCode = 'en' | 'as' | 'mni' | 'lus' | 'kha' | 'brx';
+export type LanguageCode = 'en' | 'as' | 'hi' | 'mni' | 'lus' | 'kha' | 'brx' | 'bn';
 
 export interface RoadFeatureProperties {
   id: string;

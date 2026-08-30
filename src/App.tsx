@@ -40,40 +40,88 @@ const KPIrow: React.FC = () => {
 };
 
 const CriticalLeftPanel: React.FC = () => {
-  const { vehicles, roadStatuses, openRouteDecision } = usePathSetuStore();
+  const { vehicles, roadStatuses, openRouteDecision, setSelectedVehicle } = usePathSetuStore();
+  const [tab, setTab] = React.useState<'fleet'|'districts'>('fleet');
   const critical = vehicles.filter(v=> v.priority==='CRITICAL' || v.priority==='HIGH');
   const blockedCount = critical.filter(v=> (roadStatuses[v.currentRouteId]||'OPEN')==='BLOCKED').length;
+
   return (
-    <div className="panel" style={{display:'flex',flexDirection:'column',maxHeight:560, overflow:'hidden'}}>
-      <div className="panel-title" style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-        <span>Critical Deliveries</span>
-        {blockedCount>0 && <span style={{background:'var(--crit-dim)',color:'var(--crit)',fontSize:'10px',padding:'2px 6px',borderRadius:6,fontWeight:700}}>{blockedCount} blocked</span>}
+    <div className="panel" style={{display:'flex',flexDirection:'column',height:'100%',overflow:'hidden'}}>
+      <div style={{padding:'6px 8px 4px', borderBottom:'1px solid var(--border-soft)', display:'flex', gap:4, background:'var(--surface)', flexShrink:0}}>
+        <button 
+          onClick={()=>setTab('fleet')}
+          style={{
+            flex:1, padding:'4px 6px', borderRadius:7, border:'none',
+            background: tab==='fleet' ? 'var(--surface-3)' : 'transparent',
+            color: tab==='fleet' ? 'var(--text)' : 'var(--text-dim)',
+            fontWeight: tab==='fleet' ? 700 : 500,
+            fontSize:'11px', cursor:'pointer', transition:'.18s var(--ease-soft)'
+          }}
+        >
+          🚚 Deliveries ({critical.length})
+        </button>
+        <button 
+          onClick={()=>setTab('districts')}
+          style={{
+            flex:1, padding:'4px 6px', borderRadius:7, border:'none',
+            background: tab==='districts' ? 'var(--surface-3)' : 'transparent',
+            color: tab==='districts' ? 'var(--text)' : 'var(--text-dim)',
+            fontWeight: tab==='districts' ? 700 : 500,
+            fontSize:'11px', cursor:'pointer', transition:'.18s var(--ease-soft)'
+          }}
+        >
+          📍 Districts (4)
+        </button>
       </div>
-      <div style={{flex:1,overflowY:'auto',padding:'8px 10px 12px',display:'flex',flexDirection:'column',gap:10}}>
-        {critical.map(v=>{
-          const s = roadStatuses[v.currentRouteId] || 'OPEN';
-          const statusCls = s==='BLOCKED'?'blocked':s==='RESTRICTED'?'restricted':'open';
-          const affected = s==='BLOCKED';
-          return (
-            <div key={v.id} className={`cargo-card ${affected?'affected':''}`} style={{minWidth:0, width:'100%', padding:'12px 12px'}}>
-              <div className="cargo-top">
-                <span className={`priority-pill ${v.priority.toLowerCase()}`}>{v.priority}</span>
-                <span className={`status-pill ${statusCls}`} style={{padding:'3px 7px',fontSize:'10px'}}><span className="sdot"></span>{s}</span>
+
+      {tab==='fleet' ? (
+        <div style={{flex:1,overflowY:'auto',padding:'6px 8px 8px',display:'flex',flexDirection:'column',gap:7}}>
+          {critical.map(v=>{
+            const s = roadStatuses[v.currentRouteId] || 'OPEN';
+            const statusCls = s==='BLOCKED'?'blocked':s==='RESTRICTED'?'restricted':'open';
+            const affected = s==='BLOCKED';
+            return (
+              <div 
+                key={v.id} 
+                className={`cargo-card ${affected?'affected':''}`} 
+                style={{minWidth:0, width:'100%', padding:'8px 10px', cursor:'pointer'}}
+                onClick={()=>setSelectedVehicle(v)}
+              >
+                <div className="cargo-top" style={{marginBottom:3}}>
+                  <span className={`priority-pill ${v.priority.toLowerCase()}`}>{v.priority}</span>
+                  <span className={`status-pill ${statusCls}`} style={{padding:'2px 5px',fontSize:'9px',margin:0}}><span className="sdot"></span>{s}</span>
+                </div>
+                <div className="cname" style={{fontSize:'12px', fontWeight:700}}>{v.cargo}</div>
+                <div className="croute mono" style={{fontSize:'10px',color:'var(--text-dim)'}}>{v.id} · {v.currentRouteId}</div>
+                <div style={{display:'flex',justifyContent:'space-between',marginTop:4,fontSize:'10px',color:'var(--text-faint)'}}>
+                  <span>ETA <b style={{color:'var(--text)',fontFamily:'IBM Plex Mono'}}>{v.eta}</b></span>
+                  <span>{v.driver.split(' ')[0]}</span>
+                </div>
+                <button className="mini-btn" style={{marginTop:5, padding:'4px 6px', fontSize:'10px'}} onClick={(e)=>{ e.stopPropagation(); openRouteDecision(v); }}>Optimize Route</button>
               </div>
-              <div className="cname" style={{fontSize:'13px'}}>{v.cargo}</div>
-              <div className="croute mono" style={{fontSize:'11px',color:'var(--text-dim)'}}>{v.id} · {v.currentRouteId}</div>
-              <div style={{display:'flex',justifyContent:'space-between',marginTop:8,fontSize:'11px',color:'var(--text-faint)'}}>
-                <span>ETA <b style={{color:'var(--text)',fontFamily:'IBM Plex Mono'}}>{v.eta}</b></span>
-                <span>{v.driver.split(' ')[0]}</span>
-              </div>
-              <button className="mini-btn" style={{marginTop:8}} onClick={()=>openRouteDecision(v)}>Optimize Route</button>
+            );
+          })}
+          {critical.length===0 && <div style={{fontSize:11.5,color:'var(--text-faint)',textAlign:'center',padding:16}}>No critical deliveries</div>}
+          
+          <div style={{marginTop:'auto', padding:'6px 8px', background:'var(--surface-2)', border:'1px solid var(--border-soft)', borderRadius:8, fontSize:10}}>
+            <div style={{display:'flex', justifyContent:'space-between', color:'var(--text-dim)', fontWeight:600}}>
+              <span>Fleet Telemetry</span>
+              <span style={{color:'var(--open)', display:'inline-flex', alignItems:'center', gap:3}}>● Live</span>
             </div>
-          );
-        })}
-        {critical.length===0 && <div style={{fontSize:12,color:'var(--text-faint)',textAlign:'center',padding:20}}>No critical deliveries</div>}
-      </div>
-      <div style={{padding:'8px 12px',borderTop:'1px solid var(--border-soft)',fontSize:'11px',color:'var(--text-faint)',background:'var(--surface-2)',borderRadius:'0 0 var(--radius-lg) var(--radius-lg)'}}>
-        {critical.length} priority · {blockedCount} needs reroute
+            <div style={{display:'flex', justifyContent:'space-between', color:'var(--text-faint)', marginTop:2, fontSize:9.5}}>
+              <span>Active GPS: {vehicles.length} units</span>
+              <span>Updated: 2s ago</span>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div style={{flex:1,overflowY:'auto',padding:'4px 8px 8px'}}>
+          <DistrictList />
+        </div>
+      )}
+
+      <div style={{padding:'5px 10px',borderTop:'1px solid var(--border-soft)',fontSize:'10px',color:'var(--text-faint)',background:'var(--surface-2)',borderRadius:'0 0 var(--radius-lg) var(--radius-lg)', flexShrink:0}}>
+        {tab==='fleet' ? `${critical.length} priority · ${blockedCount} needs reroute` : '4 regional corridors tracked'}
       </div>
     </div>
   );
@@ -139,7 +187,7 @@ const LayerRail: React.FC = () => {
 };
 
 const Drawer: React.FC = () => {
-  const { selectedIncident, selectedVehicle, roadStatuses, regionalRiskIndex, openRouteDecision, setSelectedIncident } = usePathSetuStore();
+  const { selectedIncident, selectedVehicle, roadStatuses, regionalRiskIndex, openRouteDecision, openIncidentDetail, incidents } = usePathSetuStore();
   const roadId = selectedIncident?.roadSegmentId || selectedVehicle?.currentRouteId || 'NH-37';
   const roadName = selectedIncident?.roadName || 'NH-37 near Kaziranga / Jiribam Corridor';
   const status = (selectedIncident?.roadStatus as string) || roadStatuses[roadId] || 'OPEN';
@@ -147,25 +195,37 @@ const Drawer: React.FC = () => {
   const reason = selectedIncident?.notes || 'Elevated landslide susceptibility on steep cut-slope; moderate rainfall accumulation. Field Sentinel verification pending.';
   const sources = selectedIncident?.source ? [selectedIncident.source] : ['Satellite','Weather Model','Field Report'];
 
-  if (!selectedIncident && !selectedVehicle) {
-    return (
-      <div className="drawer">
-        <div className="drawer-empty">
-          <div className="ico">🗺️</div>
-          <div style={{fontWeight:600, color:'var(--text-dim)'}}>Select a road on the map</div>
-          <div style={{fontSize:'12px', maxWidth:220}}>Click any colored road segment to see status, risk breakdown and recommended actions.</div>
-        </div>
-      </div>
-    );
-  }
+  const handleViewFieldReport = () => {
+    if (selectedIncident) {
+      openIncidentDetail(selectedIncident);
+    } else {
+      const matched = incidents.find(i => i.roadSegmentId === roadId) || {
+        id: 'INC-2026-081',
+        type: 'Landslide',
+        severity: 'CRITICAL',
+        roadSegmentId: roadId,
+        roadName: roadName,
+        roadStatus: (status as any) || 'BLOCKED',
+        coordinates: [93.1800, 26.5800] as [number, number],
+        timeLogged: '12 min ago',
+        photoUrl: '/assets/landslide-cam.jpg',
+        reportedBy: 'Field Sentinel Unit #04',
+        syncStatus: 'SYNCED' as const,
+        notes: reason,
+        source: 'Field Sentinel Landslide Sensor',
+      };
+      openIncidentDetail(matched);
+    }
+  };
 
-  const statusCls = status==='BLOCKED'?'blocked':status==='RESTRICTED'?'restricted':'open';
   return (
     <div className="drawer">
       <div className="drawer-head">
         <div className="rname">{roadId}</div>
         <div className="rseg">{roadName}</div>
-        <div className={`status-pill ${statusCls}`}><span className="sdot"></span>{status}</div>
+        <div className={`status-pill ${status==='BLOCKED'?'blocked':status==='RESTRICTED'?'restricted':'open'}`}>
+          <span className="sdot"></span>{status}
+        </div>
       </div>
       <div className="drawer-body">
         <div className="dsection">
@@ -175,7 +235,7 @@ const Drawer: React.FC = () => {
         <div className="dsection">
           <div className="dsection-lbl">Risk Score</div>
           <div className="risk-score-big">{risk}<span> / 100</span></div>
-          <div style={{marginTop:12}}>
+          <div style={{marginTop:8}}>
             <div className="breakdown-row"><div className="blbl">Landslide Risk</div><div className="breakdown-track"><div className="breakdown-fill" style={{width:'58%', background:'#B97A4E'}}></div></div><div className="bval mono">58%</div></div>
             <div className="breakdown-row"><div className="blbl">Rainfall (mm/24h)</div><div className="breakdown-track"><div className="breakdown-fill" style={{width:'48%', background:'#7CA36B'}}></div></div><div className="bval mono">96</div></div>
             <div className="breakdown-row"><div className="blbl">Terrain Risk</div><div className="breakdown-track"><div className="breakdown-fill" style={{width:'75%', background:'#B08FB0'}}></div></div><div className="bval mono">75%</div></div>
@@ -189,7 +249,7 @@ const Drawer: React.FC = () => {
       </div>
       <div className="drawer-actions">
         <button className="btn btn-primary" onClick={()=>openRouteDecision(selectedVehicle || undefined)}>Find Alternate Route</button>
-        <button className="btn" onClick={()=>selectedIncident && setSelectedIncident(selectedIncident)}>View Field Report</button>
+        <button className="btn" onClick={handleViewFieldReport}>View Field Report</button>
       </div>
     </div>
   );
@@ -266,18 +326,17 @@ export const App: React.FC = () => {
         ) : (
           // Dashboard default — layers via dropdown inside map, critical deliveries as left rail
           <div className="view" id="view-dashboard">
-            <KPIrow />
-            <div className="dash-grid">
-              <CriticalLeftPanel />
-              <div className="map-wrap" style={{height:560}}>
-                <MapView className="w-full h-full" />
+            <div className="dash-hero">
+              <KPIrow />
+              <div className="dash-grid">
+                <CriticalLeftPanel />
+                <div className="map-wrap">
+                  <MapView className="w-full h-full" />
+                </div>
+                <Drawer />
               </div>
-              <Drawer />
             </div>
-            <div className="panel" style={{marginTop:14}}>
-              <div className="panel-title">District Connectivity — supply & access at a glance</div>
-              <DistrictList />
-            </div>
+            <DashboardBottomSection />
           </div>
         )}
       </main>
@@ -372,6 +431,42 @@ const DistrictList: React.FC = () => {
   );
 };
 
+const DashboardBottomSection: React.FC = () => {
+  const { supplyStatus, districtConnectivity } = usePathSetuStore();
+  return (
+    <div className="bottom-grid" style={{marginTop: 14}}>
+      <div className="panel">
+        <div className="panel-title" style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+          <span>District Connectivity — Access Status</span>
+          <span style={{fontSize:'10px', color:'var(--text-faint)'}}>{districtConnectivity.accessible} Accessible · {districtConnectivity.blocked} Blocked</span>
+        </div>
+        <DistrictList />
+      </div>
+
+      <div className="panel">
+        <div className="panel-title">Regional Supply Gaps & Buffer</div>
+        <div style={{padding:'14px 18px 18px'}}>
+          <div className="supply-bar-row">
+            <div className="sname">Food Supplies Buffer</div>
+            <div className="supply-track"><div className="supply-fill" style={{width:`${supplyStatus.food}%`, background:'linear-gradient(90deg,var(--brand),#EF8B7E)'}}></div></div>
+            <div className="spct" style={{color:'var(--brand)'}}>{supplyStatus.food}%</div>
+          </div>
+          <div className="supply-bar-row">
+            <div className="sname">Emergency Medicine</div>
+            <div className="supply-track"><div className="supply-fill" style={{width:`${supplyStatus.medicine}%`, background: supplyStatus.medicine < 50 ? 'linear-gradient(90deg,var(--crit),#EF8B7E)' : 'linear-gradient(90deg,var(--open),#A6C495)'}}></div></div>
+            <div className="spct" style={{color: supplyStatus.medicine < 50 ? 'var(--crit)' : 'var(--open)'}}>{supplyStatus.medicine}%</div>
+          </div>
+          <div className="supply-bar-row">
+            <div className="sname">Construction & Relief</div>
+            <div className="supply-track"><div className="supply-fill" style={{width:`${supplyStatus.construction}%`, background:'linear-gradient(90deg,var(--route),#8EB5CA)'}}></div></div>
+            <div className="spct" style={{color:'var(--route)'}}>{supplyStatus.construction}%</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const IncidentsView: React.FC = () => {
   const { incidents, setSelectedIncident, setFocusCoordinates, openIncidentDetail } = usePathSetuStore();
   const [filter, setFilter] = React.useState<'all'|'critical'|'medium'>('all');
@@ -449,27 +544,22 @@ const IncidentsView: React.FC = () => {
 };
 
 const AlertsView: React.FC = () => {
-  const { selectedLanguage, setSelectedLanguage } = usePathSetuStore() as any;
+  const { alerts, selectedLanguage, setSelectedLanguage } = usePathSetuStore();
   const [filter, setFilter] = React.useState<'all'|'critical'|'high'>('all');
   const [q, setQ] = React.useState('');
-  const alertsData = [
-    { id:'ALT-001', severity:'CRITICAL', corridor:'NH-37 (Dima Hasao / Kaziranga Sector)', title:'ROAD BLOCKED — Landslide Detected', message:'Major landslide blocking NH-37. Alternate Route B (Bypass) is recommended (+45 min delay).', timestamp:'09:42 HRS', lang:'Assamese', recipient:'VEH-104 · Emergency Medicine', vehicles:['VEH-104'] },
-    { id:'ALT-002', severity:'HIGH', corridor:'NH-6 (Jowai – Silchar Corridor)', title:'ROAD RESTRICTED — Single Lane Subsidence', message:'Single-file convoy escort in effect. Heavy vehicles advised to proceed with caution.', timestamp:'10:15 HRS', lang:'English', recipient:'VEH-205 · Food Supplies', vehicles:['VEH-205'] },
-    { id:'ALT-003', severity:'CRITICAL', corridor:'NH-37 Kaziranga / Jiribam', title:'VEHICLE AT RISK — VEH-104 Halted', message:'Emergency Medicine convoy halted before blockage at Nagaon Junction. Reroute via Golaghat bypass ready.', timestamp:'09:44 HRS', lang:'Mizo', recipient:'VEH-104 · Emergency Medicine', vehicles:['VEH-104'] },
-  ];
-  const filtered = alertsData.filter(a=>{
+  const filtered = alerts.filter(a=>{
     const f = filter==='all' ? true : filter==='critical' ? a.severity==='CRITICAL' : a.severity==='HIGH';
     const s = !q || `${a.title} ${a.corridor} ${a.message} ${a.recipient}`.toLowerCase().includes(q.toLowerCase());
     return f && s;
   });
-  const critCount = alertsData.filter(a=>a.severity==='CRITICAL').length;
+  const critCount = alerts.filter(a=>a.severity==='CRITICAL').length;
   return (
     <div className="panel" style={{overflow:'hidden'}}>
       <div style={{padding:'18px 18px 14px', borderBottom:'1px solid var(--border-soft)', background:'var(--surface)'}}>
         <div style={{display:'flex',justifyContent:'space-between',gap:12,flexWrap:'wrap',alignItems:'flex-start'}}>
           <div>
             <div style={{fontFamily:'Space Grotesk',fontSize:18,fontWeight:700,lineHeight:1}}>Multilingual Alert Log</div>
-            <div style={{fontSize:12.5,color:'var(--text-dim)',marginTop:4}}>{alertsData.length} broadcasts · {critCount} critical · Voice + text in 6 languages · Last sync just now</div>
+            <div style={{fontSize:12.5,color:'var(--text-dim)',marginTop:4}}>{alerts.length} broadcasts · {critCount} critical · Live broadcast gateway · TTS in 8 languages</div>
           </div>
           <div style={{display:'flex',gap:8,alignItems:'center'}}>
             <div style={{position:'relative'}}>
@@ -477,14 +567,14 @@ const AlertsView: React.FC = () => {
               <span style={{position:'absolute',right:10,top:'50%',transform:'translateY(-50%)',fontSize:12, color:'var(--text-faint)'}}>⌕</span>
             </div>
             <select value={selectedLanguage} onChange={e=> (setSelectedLanguage as any)(e.target.value)} style={{padding:'8px 10px',borderRadius:10,border:'1px solid var(--border)',background:'var(--surface-2)',fontSize:12, fontWeight:600}}>
-              <option value="en">EN</option><option value="as">AS</option><option value="mni">MNI</option><option value="lus">Mizo</option><option value="kha">Kha</option><option value="brx">Bodo</option>
+              <option value="en">EN</option><option value="as">AS (অসমীয়া)</option><option value="hi">HI (हिन्दी)</option><option value="mni">MNI (মৈতৈলোন্)</option><option value="lus">Mizo</option><option value="kha">Khasi</option><option value="brx">Bodo</option><option value="bn">BN (বাংলা)</option>
             </select>
           </div>
         </div>
         <div className="filter-row" style={{marginTop:14,marginBottom:0}}>
           {(['all','critical','high'] as const).map(t=>(
             <button key={t} className={`filter-chip ${filter===t?'active':''}`} onClick={()=>setFilter(t)}>
-              {t==='all'?'All': t==='critical'?'Critical':'High'} {t==='all'?`· ${alertsData.length}`: t==='critical'?`· ${critCount}`:`· ${alertsData.length-critCount}`}
+              {t==='all'?'All': t==='critical'?'Critical':'High'} {t==='all'?`· ${alerts.length}`: t==='critical'?`· ${critCount}`:`· ${alerts.length-critCount}`}
             </button>
           ))}
         </div>
@@ -507,8 +597,8 @@ const AlertsView: React.FC = () => {
                 <span className="tag" style={{background: a.severity==='CRITICAL'?'var(--crit-dim)':'var(--warn-dim)', color: a.severity==='CRITICAL'?'var(--crit)':'var(--warn)', borderColor:'transparent', fontWeight:800, padding:'3px 8px'}}>{a.severity}</span>
                 <span className="tag" style={{background:'var(--surface-2)', border:'1px solid var(--border-soft)'}}>{a.corridor.split('(')[0].trim()}</span>
                 <span style={{marginLeft:'auto', display:'flex', gap:6}}>
-                  <button className="btn" style={{padding:'6px 10px', fontSize:11}} onClick={()=> playMultilingualAlert(selectedLanguage)}>🔊 Play {a.lang}</button>
-                  <button className="btn btn-primary" style={{padding:'6px 10px', fontSize:11}} onClick={()=>{}}>View corridor</button>
+                  <button className="btn" style={{padding:'6px 10px', fontSize:11}} onClick={()=> playMultilingualAlert(a.lang)}>🔊 Play {a.lang}</button>
+                  <button className="btn btn-primary" style={{padding:'6px 10px', fontSize:11}} onClick={()=>{ playMultilingualAlert(selectedLanguage); }}>🔊 Channel Audio</button>
                 </span>
               </div>
             </div>
@@ -518,25 +608,26 @@ const AlertsView: React.FC = () => {
       </div>
       <div style={{padding:'10px 14px', borderTop:'1px solid var(--border-soft)', background:'var(--surface-2)', display:'flex', justifyContent:'space-between', fontSize:11.5, color:'var(--text-faint)'}}>
         <span>Broadcasts are sent via gateway in selected language · TTS available offline</span>
-        <span className="mono">{filtered.length}/{alertsData.length}</span>
+        <span className="mono">{filtered.length}/{alerts.length}</span>
       </div>
     </div>
   );
 };
 
 const AnalyticsView: React.FC = () => {
-  const { roadStatuses, vehicles, incidents } = usePathSetuStore();
+  const { roadStatuses, vehicles, incidents, alerts, supplyStatus, districtConnectivity, regionalRiskIndex, simulationActive } = usePathSetuStore();
   const blocked = Object.values(roadStatuses).filter(v=>v==='BLOCKED').length;
   const high = incidents.filter(i=>i.severity==='CRITICAL').length;
+  const onScheduleRate = Math.round((vehicles.filter(v=>!v.routeAtRisk).length / Math.max(1, vehicles.length)) * 100);
   const tiles = [
-    { n:blocked, l:'Blocked Roads' },
-    { n:high, l:'High-Risk Roads' },
-    { n:vehicles.length, l:'Active Vehicles' },
+    { n:blocked, l:'Blocked Corridors' },
+    { n:high, l:'High-Risk Hazards' },
+    { n:vehicles.length, l:'Active Convoys' },
     { n:vehicles.filter(v=>v.priority==='CRITICAL').length, l:'Critical Deliveries' },
-    { n:incidents.length, l:'Field Reports Today' },
-    { n:'6 min', l:'Avg Verification Time' },
-    { n:'94%', l:'Fleet On-Schedule Rate' },
-    { n:blocked>0? 'Active':'Normal', l:'System Status' },
+    { n:incidents.length, l:'Field Reports Logged' },
+    { n:alerts.length, l:'Active Broadcasts' },
+    { n:`${regionalRiskIndex}/100`, l:'Regional Risk Score' },
+    { n:`${onScheduleRate}%`, l:'Fleet On-Schedule' },
   ];
   return (
     <div className="view">
@@ -547,15 +638,39 @@ const AnalyticsView: React.FC = () => {
       </div>
       <div className="bottom-grid">
         <div className="panel">
-          <div className="panel-title">Supply Gap by District</div>
+          <div className="panel-title" style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+            <span>Supply Gap & Critical Inventory</span>
+            <span style={{fontSize:'10px', color:'var(--text-faint)'}}>Live Stock Telemetry</span>
+          </div>
           <div style={{padding:'14px 18px 18px'}}>
-            <div className="supply-bar-row"><div className="sname">East Sikkim</div><div className="supply-track"><div className="supply-fill" style={{width:'64%'}}></div></div><div className="spct">64%</div></div>
-            <div className="supply-bar-row"><div className="sname">Ukhrul, Manipur</div><div className="supply-track"><div className="supply-fill" style={{width:'31%', background:'linear-gradient(90deg,#D9A23A,#F3CC7E)'}}></div></div><div className="spct" style={{color:'var(--warn)'}}>31%</div></div>
-            <div className="supply-bar-row"><div className="sname">Kolasib, Mizoram</div><div className="supply-track"><div className="supply-fill" style={{width:'18%', background:'linear-gradient(90deg,#D9A23A,#F3CC7E)'}}></div></div><div className="spct" style={{color:'var(--warn)'}}>18%</div></div>
+            <div className="supply-bar-row">
+              <div className="sname">Emergency Medicine Buffer</div>
+              <div className="supply-track">
+                <div className="supply-fill" style={{width:`${supplyStatus.medicine}%`, background: supplyStatus.medicine < 50 ? 'linear-gradient(90deg,var(--crit),#EF8B7E)' : 'linear-gradient(90deg,var(--open),#A6C495)'}}></div>
+              </div>
+              <div className="spct" style={{color: supplyStatus.medicine < 50 ? 'var(--crit)' : 'var(--open)'}}>{supplyStatus.medicine}%</div>
+            </div>
+            <div className="supply-bar-row">
+              <div className="sname">Food Supplies Reserve</div>
+              <div className="supply-track">
+                <div className="supply-fill" style={{width:`${supplyStatus.food}%`, background:'linear-gradient(90deg,var(--brand),#EF8B7E)'}}></div>
+              </div>
+              <div className="spct" style={{color:'var(--brand)'}}>{supplyStatus.food}%</div>
+            </div>
+            <div className="supply-bar-row">
+              <div className="sname">Construction & Bridge Repair</div>
+              <div className="supply-track">
+                <div className="supply-fill" style={{width:`${supplyStatus.construction}%`, background:'linear-gradient(90deg,var(--route),#8EB5CA)'}}></div>
+              </div>
+              <div className="spct" style={{color:'var(--route)'}}>{supplyStatus.construction}%</div>
+            </div>
           </div>
         </div>
         <div className="panel">
-          <div className="panel-title">District Connectivity</div>
+          <div className="panel-title" style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+            <span>District Connectivity & Isolation Index</span>
+            <span style={{fontSize:'10px', color:'var(--text-faint)'}}>{districtConnectivity.accessible} Accessible · {districtConnectivity.blocked} Blocked</span>
+          </div>
           <DistrictList />
         </div>
       </div>

@@ -3,91 +3,48 @@
   "features": [
     {
       "type": "Feature",
+      "id": "RZ-KAZIRANGA",
+      "properties": {
+        "id": "RZ-KAZIRANGA",
+        "name": "NH-37 Kaziranga / Upper Assam Sector",
+        "district": "Golaghat & Nagaon",
+        "state": "Assam",
+        "roadSegmentId": "NH-37",
+        "riskLevel": "CRITICAL",
+        "riskScore": 88,
+        "hazardType": "Landslide / Steep Cut-Slope Failure",
+        "rainfall": "112 mm/24h",
+        "terrainRisk": "85%",
+        "source": "NASA LHASA / IMD Radar (Satellite Sentinel Live)",
+        "notes": "Major mud & boulder slide hazard on steep cut-slope; severe rainfall saturation at Km 142.",
+        "isSimulated": true
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [93.1800, 26.5800]
+      }
+    },
+    {
+      "type": "Feature",
       "id": "RZ-DIMA-HASAO",
       "properties": {
         "id": "RZ-DIMA-HASAO",
-        "name": "Dima Hasao District (Hill Slopes & Ghat Corridor)",
+        "name": "Dima Hasao Hill Slopes & Ghat Corridor",
         "district": "Dima Hasao",
         "state": "Assam",
+        "roadSegmentId": "NH-27",
         "riskLevel": "CRITICAL",
-        "riskScore": 88,
-        "hazardType": "Landslide / Mountain Slope Failure",
-        "source": "NASA LHASA / IMD Precipitation Benchmark (Prototype Dataset)",
+        "riskScore": 84,
+        "hazardType": "Mountain Slope Failure & Debris Flow",
+        "rainfall": "105 mm/24h",
+        "terrainRisk": "88%",
+        "source": "GSI Geohazard / IMD Precipitation Benchmark",
+        "notes": "Heavy slope instability across ghat hairpin turns; high rockfall probability.",
         "isSimulated": true
       },
       "geometry": {
-        "type": "Polygon",
-        "coordinates": [
-          [
-            [92.7100, 25.4800],
-            [92.9500, 25.5500],
-            [93.2000, 25.4200],
-            [93.3100, 25.1800],
-            [93.1800, 24.9500],
-            [92.8200, 24.9200],
-            [92.6500, 25.1200],
-            [92.6200, 25.3500],
-            [92.7100, 25.4800]
-          ]
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "id": "RZ-EAST-KHASI",
-      "properties": {
-        "id": "RZ-EAST-KHASI",
-        "name": "East Khasi Hills District (Escarpment Sector)",
-        "district": "East Khasi Hills",
-        "state": "Meghalaya",
-        "riskLevel": "HIGH",
-        "riskScore": 68,
-        "hazardType": "High-Intensity Rainfall / Debris Flow",
-        "source": "IMD Heavy Rain Alert Aligned (Prototype Dataset)",
-        "isSimulated": true
-      },
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [
-          [
-            [91.6200, 25.4200],
-            [91.9500, 25.4600],
-            [92.1500, 25.3800],
-            [92.1800, 25.1200],
-            [91.8800, 25.0200],
-            [91.5800, 25.1500],
-            [91.6200, 25.4200]
-          ]
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "id": "RZ-KAZIRANGA-FLOOD",
-      "properties": {
-        "id": "RZ-KAZIRANGA-FLOOD",
-        "name": "Golaghat / Nagaon (Brahmaputra Lowland Belt)",
-        "district": "Golaghat & Nagaon",
-        "state": "Assam",
-        "riskLevel": "HIGH",
-        "riskScore": 74,
-        "hazardType": "River Inundation / Floodplain Overflow",
-        "source": "CWC Hydrological / NASA LHASA Benchmark (Prototype Dataset)",
-        "isSimulated": true
-      },
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [
-          [
-            [92.9500, 26.5800],
-            [93.3500, 26.6800],
-            [93.7500, 26.6500],
-            [93.6800, 26.4500],
-            [93.2800, 26.4200],
-            [92.9800, 26.4500],
-            [92.9500, 26.5800]
-          ]
-        ]
+        "type": "Point",
+        "coordinates": [92.9500, 25.1800]
       }
     },
     {
@@ -98,24 +55,134 @@
         "name": "Jiribam / NH-37 Foothills Hazard Sector",
         "district": "Jiribam / Cachar Border",
         "state": "Manipur / Assam",
+        "roadSegmentId": "NH-37",
         "riskLevel": "CRITICAL",
         "riskScore": 82,
-        "hazardType": "Active Slope Instability / Rockfall",
-        "source": "Field Patrol & NASA LHASA Benchmark (Prototype Dataset)",
+        "hazardType": "Active Slope Instability & Rockfall",
+        "rainfall": "94 mm/24h",
+        "terrainRisk": "78%",
+        "source": "Field Patrol & NASA LHASA Real-Time Feed",
+        "notes": "Active boulder roll and hill wash; convoy restriction advised.",
         "isSimulated": true
       },
       "geometry": {
-        "type": "Polygon",
-        "coordinates": [
-          [
-            [92.9800, 24.9500],
-            [93.2500, 24.9200],
-            [93.3200, 24.6800],
-            [93.0800, 24.6500],
-            [92.9200, 24.7800],
-            [92.9800, 24.9500]
-          ]
-        ]
+        "type": "Point",
+        "coordinates": [93.1500, 24.8000]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "RZ-JOWAI-SILCHAR",
+      "properties": {
+        "id": "RZ-JOWAI-SILCHAR",
+        "name": "NH-6 Jowai – Silchar Mountain Pass",
+        "district": "East Jaintia Hills",
+        "state": "Meghalaya",
+        "roadSegmentId": "NH-6",
+        "riskLevel": "HIGH",
+        "riskScore": 72,
+        "hazardType": "Ground Subsidence / Cut-Slope Slump",
+        "rainfall": "86 mm/24h",
+        "terrainRisk": "72%",
+        "source": "Meghalaya Disaster Management Authority",
+        "notes": "Single lane subsidence near Sonapur tunnel; single-file escort in effect.",
+        "isSimulated": true
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [92.4500, 25.2000]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "RZ-KOLASIB-RIDGE",
+      "properties": {
+        "id": "RZ-KOLASIB-RIDGE",
+        "name": "Kolasib Ridge & Supply Lifeline (NH-306)",
+        "district": "Kolasib",
+        "state": "Mizoram",
+        "roadSegmentId": "NH-306",
+        "riskLevel": "HIGH",
+        "riskScore": 76,
+        "hazardType": "Heavy Rain Washout & Landslide",
+        "rainfall": "98 mm/24h",
+        "terrainRisk": "80%",
+        "source": "State Remote Sensing Centre (Mizoram)",
+        "notes": "Key medical supply corridor under intermittent mud wash threat.",
+        "isSimulated": true
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [92.6800, 24.2200]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "RZ-EAST-KHASI",
+      "properties": {
+        "id": "RZ-EAST-KHASI",
+        "name": "East Khasi Hills Escarpment Sector",
+        "district": "East Khasi Hills",
+        "state": "Meghalaya",
+        "roadSegmentId": "NH-6",
+        "riskLevel": "HIGH",
+        "riskScore": 68,
+        "hazardType": "High-Intensity Rainfall Inundation",
+        "rainfall": "120 mm/24h",
+        "terrainRisk": "64%",
+        "source": "IMD Extreme Rain Alert & Radar Live",
+        "notes": "Intense tropical rainfall triggering flash runoff along valley cuts.",
+        "isSimulated": true
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [91.7200, 25.2800]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "RZ-BRAHMAPUTRA-FLOOD",
+      "properties": {
+        "id": "RZ-BRAHMAPUTRA-FLOOD",
+        "name": "Brahmaputra Floodplain (Majuli–Jorhat Belt)",
+        "district": "Majuli & Jorhat",
+        "state": "Assam",
+        "roadSegmentId": "NH-37",
+        "riskLevel": "NORMAL",
+        "riskScore": 64,
+        "hazardType": "Riverine Inundation & Embankment Overwash",
+        "rainfall": "78 mm/24h",
+        "terrainRisk": "45%",
+        "source": "Central Water Commission (CWC Hydrological)",
+        "notes": "Water levels near danger mark; ferry terminals operating under watch.",
+        "isSimulated": true
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [94.1200, 26.8800]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "RZ-LUMDING-HAFLONG",
+      "properties": {
+        "id": "RZ-LUMDING-HAFLONG",
+        "name": "Lumding – Haflong Corridor Cut",
+        "district": "Hojai & Dima Hasao",
+        "state": "Assam",
+        "roadSegmentId": "ALT-ROUTE-B",
+        "riskLevel": "HIGH",
+        "riskScore": 70,
+        "hazardType": "Soil Liquefaction & Silt Slump",
+        "rainfall": "82 mm/24h",
+        "terrainRisk": "68%",
+        "source": "NER Spatial Data SDI",
+        "notes": "Secondary bypass route monitored for active ground movement.",
+        "isSimulated": true
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [93.0200, 25.7500]
       }
     }
   ]

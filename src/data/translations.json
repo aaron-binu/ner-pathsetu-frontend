@@ -5,6 +5,7 @@
     "alertTitle": "ROAD BLOCKED",
     "alertSubtitle": "Landslide detected on NH Corridor. Alternative route available.",
     "speechText": "Alert. Road Blocked. Landslide detected on National Highway Corridor. Alternative Route B is recommended with an estimated forty-five minute delay.",
+    "phoneticText": "Alert. Road Blocked. Landslide detected on National Highway Corridor. Alternative Route B is recommended.",
     "langCode": "en-IN"
   },
   "as": {
@@ -13,7 +14,17 @@
     "alertTitle": "পথ অৱৰোধ (BLOCKED)",
     "alertSubtitle": "ৰাষ্ট্ৰীয় ঘাইপথত ভূমিস্খলন ধৰা পৰিছে। বিকল্প পথ উপলব্ধ।",
     "speechText": "সতৰ্কবাৰ্তা। পথ অৱৰোধ। ৰাষ্ট্ৰীয় ঘাইপথত ভূমিস্খলন হৈছে। বিকল্প পথ গ্ৰহণ কৰক।",
+    "phoneticText": "Sotorkobarta. Poth oborodh. Rastriya ghaipothot bhumiskholon hoise. Bikalpa poth grohon korok.",
     "langCode": "as-IN"
+  },
+  "hi": {
+    "name": "Hindi",
+    "nativeName": "हिन्दी",
+    "alertTitle": "मार्ग अवरुद्ध (BLOCKED)",
+    "alertSubtitle": "राष्ट्रीय राजमार्ग पर भूस्खलन। वैकल्पिक मार्ग उपलब्ध है।",
+    "speechText": "चेतावनी। मार्ग अवरुद्ध। राष्ट्रीय राजमार्ग पर भूस्खलन हुआ है। वैकल्पिक मार्ग का उपयोग करें।",
+    "phoneticText": "Chetavani. Marg avaruddh. Rashtriya rajmarg par bhuskhalan hua hai. Vaikalpik marg ka upayog karein.",
+    "langCode": "hi-IN"
   },
   "mni": {
     "name": "Manipuri",
@@ -21,6 +32,7 @@
     "alertTitle": "লম্বী থিংজিনখ্রে (BLOCKED)",
     "alertSubtitle": "এন.এইচ. কোরিডোরদা ঈচিং-লৈবাক তুমখ্রে। অতোপ্পা লম্বী শিজিন্নবা য়াই।",
     "speechText": "চেকশিনবা ৱাফম। লম্বী থিংজিনখ্রে। এন এইচ কোরিডোরদা ঈচিং লৈবাক তুমখ্রে। অতোপ্পা লম্বী শিজিন্নবীয়ু।",
+    "phoneticText": "Cheksinba wafam. Lambi thingjinkhre. NH corridorda leibak tumkhre. Atoppa lambi sijinnabiyu.",
     "langCode": "bn-IN"
   },
   "lus": {
@@ -29,6 +41,7 @@
     "alertTitle": "KAWNG KHAR A NI (BLOCKED)",
     "alertSubtitle": "NH kawngah leimin a thleng. Kawng dang zawh tur a awm.",
     "speechText": "Fimkhurna. Kawng khar a ni. NH kawngah leimin a thleng a, kawng dang B zawh a rawt a ni.",
+    "phoneticText": "Fimkhurna. Kawng khar a ni. NH kawngah leimin a thleng a, kawng dang B zawh a rawt a ni.",
     "langCode": "en-IN"
   },
   "kha": {
@@ -37,6 +50,7 @@
     "alertTitle": "KA SUROK LA KHANG (BLOCKED)",
     "alertSubtitle": "Don ka jylliew ha surok bah NH. Ka surok ba la pynkhreh ka don.",
     "speechText": "Maham. Ka surok bah NH la khang na ka daw ka jylliew khyndew. Sngewbha pyndonkam da ka surok B.",
+    "phoneticText": "Maham. Ka surok bah NH la khang na ka daw ka jylliew khyndew. Sngewbha pyndonkam da ka surok B.",
     "langCode": "en-IN"
   },
   "brx": {
@@ -45,6 +59,16 @@
     "alertTitle": "लामा बन्द (BLOCKED)",
     "alertSubtitle": "NH लामा सायाव हा खख्लैदों। गुबुन लामा मोननो हागोन।",
     "speechText": "सावथ्रिखांथि। लामा बन्द। एन एच लामायाव हा खख्लैदों। गुबुन लामा बि बाहाय।",
+    "phoneticText": "Saothrikhangthi. Lama bondo. NH lamayao ha khokhlaidwng. Gubun lama bi bahai.",
     "langCode": "hi-IN"
+  },
+  "bn": {
+    "name": "Bengali",
+    "nativeName": "বাংলা",
+    "alertTitle": "রাস্তা অবরুদ্ধ (BLOCKED)",
+    "alertSubtitle": "জাতীয় সড়কে ভূমিধস। বিকল্প রাস্তা উপলব্ধ।",
+    "speechText": "সতর্কবার্তা। রাস্তা অবরুদ্ধ। জাতীয় সড়কে ভূমিধস হয়েছে। বিকল্প পথ ব্যবহার করুন।",
+    "phoneticText": "Sotorkobarta. Rasta oboruddho. Jatiyo soroke bhumidhos hoyeche. Bikalpa poth byabahar korun.",
+    "langCode": "bn-IN"
   }
 }

@@ -20,17 +20,19 @@ export const AlertBroadcastModal: React.FC = () => {
           <div style={{marginTop:14}}>
             <div style={{fontSize:10,color:'var(--text-faint)',textTransform:'uppercase',letterSpacing:'.6px',fontWeight:700,marginBottom:6}}>Language Channel</div>
             <select value={selectedLanguage} onChange={e=>setSelectedLanguage(e.target.value as any)} style={{width:'100%',padding:'10px 12px',borderRadius:10,border:'1px solid var(--border)',background:'var(--surface)',fontSize:13}}>
-              <option value="en">English</option>
+              <option value="en">English (Default)</option>
               <option value="as">Assamese (অসমীয়া)</option>
+              <option value="hi">Hindi (हिन्दी)</option>
               <option value="mni">Manipuri (মৈতৈলোন্)</option>
-              <option value="lus">Mizo</option>
-              <option value="kha">Khasi</option>
-              <option value="brx">Bodo</option>
+              <option value="lus">Mizo (Mizo ṭawng)</option>
+              <option value="kha">Khasi (Ka Ktien Khasi)</option>
+              <option value="brx">Bodo (बर')</option>
+              <option value="bn">Bengali (বাংলা)</option>
             </select>
           </div>
           <div style={{display:'flex',gap:10,marginTop:16}}>
             <button className="btn" style={{flex:1}} onClick={closeModals}>Dismiss</button>
-            <button className="btn btn-primary" style={{flex:1}} onClick={()=>playMultilingualAlert(selectedLanguage)}>🔊 Play Alert</button>
+            <button className="btn btn-primary" style={{flex:1}} onClick={()=>playMultilingualAlert(selectedLanguage)}>🔊 Play Voice Alert</button>
           </div>
         </div>
       </div>

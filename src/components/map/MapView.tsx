@@ -177,42 +177,141 @@ export const MapView: React.FC<MapViewProps> = ({
           data: riskZonesGeoJSON as any,
         });
 
+        // 1. Radiant soft GIS Heatmap Layer (Red/Orange/Amber gradient driven by riskScore)
         map.addLayer({
-          id: 'hazard-risk-fill',
-          type: 'fill',
+          id: 'hazard-risk-heatmap',
+          type: 'heatmap',
           source: 'risk-zones-source',
+          maxzoom: 15,
           layout: {
             visibility: layers.hazardRisk ? 'visible' : 'none',
           },
           paint: {
-            'fill-color': [
-              'match',
-              ['get', 'riskLevel'],
-              'CRITICAL', '#dc2626',
-              'HIGH', '#ea580c',
-              '#d97706',
+            // Weight based on riskScore (0 to 100)
+            'heatmap-weight': [
+              'interpolate',
+              ['linear'],
+              ['get', 'riskScore'],
+              0, 0,
+              40, 0.4,
+              70, 0.8,
+              100, 1.3,
             ],
-            'fill-opacity': 0.12,
+            // Heatmap intensity multiplier across zoom levels
+            'heatmap-intensity': [
+              'interpolate',
+              ['linear'],
+              ['zoom'],
+              0, 1.0,
+              7, 1.8,
+              10, 2.6,
+            ],
+            // Color ramp: transparent -> soft warm amber -> bright orange -> intense fiery red -> deep crimson core
+            'heatmap-color': [
+              'interpolate',
+              ['linear'],
+              ['heatmap-density'],
+              0, 'rgba(0, 0, 0, 0)',
+              0.12, 'rgba(254, 215, 170, 0.45)', // soft amber yellow
+              0.32, 'rgba(251, 146, 60, 0.70)',  // vivid orange
+              0.58, 'rgba(234, 88, 12, 0.85)',   // deep fiery orange-red
+              0.80, 'rgba(220, 38, 38, 0.92)',   // intense hazard red
+              1.0, 'rgba(153, 27, 27, 0.98)',    // deep emergency core
+            ],
+            // Heatmap radius expansion across zoom levels
+            'heatmap-radius': [
+              'interpolate',
+              ['linear'],
+              ['zoom'],
+              5, 32,
+              7.5, 60,
+              10, 95,
+              13, 150,
+            ],
+            'heatmap-opacity': 0.85,
           },
         });
 
+        // 2. Soft Radial Glow Halo around Hazard Core
         map.addLayer({
-          id: 'hazard-risk-line',
-          type: 'line',
+          id: 'hazard-risk-glow',
+          type: 'circle',
           source: 'risk-zones-source',
+          minzoom: 6,
           layout: {
             visibility: layers.hazardRisk ? 'visible' : 'none',
           },
           paint: {
-            'line-color': [
+            'circle-radius': [
+              'interpolate',
+              ['linear'],
+              ['zoom'],
+              6, 18,
+              8, 30,
+              11, 48,
+            ],
+            'circle-color': [
               'match',
               ['get', 'riskLevel'],
               'CRITICAL', '#dc2626',
               'HIGH', '#ea580c',
-              '#d97706',
+              '#f59e0b',
             ],
-            'line-width': 1.2,
-            'line-dasharray': [2, 2],
+            'circle-opacity': 0.35,
+            'circle-blur': 0.75,
+          },
+        });
+
+        // 3. Crisp Interactive Hazard Node Circle
+        map.addLayer({
+          id: 'hazard-risk-points-layer',
+          type: 'circle',
+          source: 'risk-zones-source',
+          minzoom: 6,
+          layout: {
+            visibility: layers.hazardRisk ? 'visible' : 'none',
+          },
+          paint: {
+            'circle-radius': [
+              'interpolate',
+              ['linear'],
+              ['zoom'],
+              6, 5,
+              8, 7.5,
+              11, 11,
+            ],
+            'circle-color': [
+              'match',
+              ['get', 'riskLevel'],
+              'CRITICAL', '#dc2626',
+              'HIGH', '#ea580c',
+              '#f59e0b',
+            ],
+            'circle-stroke-color': '#ffffff',
+            'circle-stroke-width': 1.5,
+            'circle-opacity': 0.9,
+          },
+        });
+
+        // 4. Risk Score Label badge (visible on close zoom, no collision)
+        map.addLayer({
+          id: 'hazard-risk-label-layer',
+          type: 'symbol',
+          source: 'risk-zones-source',
+          minzoom: 8.5,
+          layout: {
+            visibility: layers.hazardRisk ? 'visible' : 'none',
+            'text-field': ['concat', ['to-string', ['get', 'riskScore']], '/100'],
+            'text-size': 10,
+            'text-offset': [0, 1.6],
+            'text-anchor': 'top',
+            'text-allow-overlap': false,
+            'text-ignore-placement': false,
+          },
+          paint: {
+            'text-color': '#2A211A',
+            'text-halo-color': '#ffffff',
+            'text-halo-width': 2,
           },
         });
 
@@ -395,7 +494,53 @@ export const MapView: React.FC<MapViewProps> = ({
           },
         });
 
-        const interactiveLayers = ['hazard-risk-fill', 'road-accessibility-layer'];
+        // Risk Zone GIS intelligence click handler
+        const handleRiskClick = (e: any) => {
+          if (!e.features || !e.features[0]) return;
+          const props = e.features[0].properties as any;
+          const score = props.riskScore || 72;
+          const level = (props.riskLevel || 'HIGH').toUpperCase();
+          const levelColor = level === 'CRITICAL' ? '#dc2626' : level === 'HIGH' ? '#ea580c' : '#d97706';
+
+          new maplibregl.Popup({ offset: 14, closeButton: true })
+            .setLngLat(e.lngLat)
+            .setHTML(`
+              <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 6px 8px; min-width: 240px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px;">
+                  <span style="font-size: 9.5px; font-weight: 800; color: ${levelColor}; text-transform: uppercase; background: ${levelColor}18; padding: 2px 7px; border-radius: 4px; border: 1px solid ${levelColor}44; letter-spacing: 0.3px;">
+                    ${level} RISK ZONE
+                  </span>
+                  <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 800; color: ${levelColor};">
+                    ${score}<span style="font-size: 10px; font-weight: 600; color: #64748b;"> / 100</span>
+                  </span>
+                </div>
+                <div style="font-size: 13px; font-weight: 700; color: #0f172a; line-height: 1.3; margin-bottom: 5px;">
+                  ${props.name}
+                </div>
+                <div style="font-size: 11.5px; color: #1e293b; margin-bottom: 6px; line-height: 1.4; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 6px 8px;">
+                  <b>⚠️ Hazard:</b> ${props.hazardType || 'Active Slope Failure / Mudflow'}
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 11px; color: #475569; margin-bottom: 4px;">
+                  <span>Rainfall: <b>${props.rainfall || '96 mm/24h'}</b></span>
+                  <span>Terrain Risk: <b>${props.terrainRisk || '75%'}</b></span>
+                </div>
+                <div style="font-size: 9.5px; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 4px; margin-top: 5px;">
+                  🛰️ <b>GIS Sentinel:</b> ${props.source || 'NASA LHASA / IMD Radar Live'}
+                </div>
+              </div>
+            `)
+            .addTo(map);
+
+          // Update store regional risk index
+          usePathSetuStore.setState({
+            regionalRiskIndex: score,
+          });
+        };
+
+        map.on('click', 'hazard-risk-points-layer', handleRiskClick);
+        map.on('click', 'hazard-risk-glow', handleRiskClick);
+
+        const interactiveLayers = ['hazard-risk-points-layer', 'hazard-risk-glow', 'road-accessibility-layer'];
         interactiveLayers.forEach((layerId) => {
           map.on('mouseenter', layerId, () => {
             map.getCanvas().style.cursor = 'pointer';
@@ -425,10 +570,18 @@ export const MapView: React.FC<MapViewProps> = ({
     if (!map || !mapLoaded) return;
 
     try {
-      if (map.getLayer('hazard-risk-fill')) {
-        map.setLayoutProperty('hazard-risk-fill', 'visibility', layers.hazardRisk ? 'visible' : 'none');
-        map.setLayoutProperty('hazard-risk-line', 'visibility', layers.hazardRisk ? 'visible' : 'none');
-      }
+      const riskLayers = [
+        'hazard-risk-heatmap',
+        'hazard-risk-glow',
+        'hazard-risk-points-layer',
+        'hazard-risk-label-layer',
+      ];
+      riskLayers.forEach((lId) => {
+        if (map.getLayer(lId)) {
+          map.setLayoutProperty(lId, 'visibility', layers.hazardRisk ? 'visible' : 'none');
+        }
+      });
+
       if (map.getLayer('road-accessibility-layer')) {
         map.setLayoutProperty('road-accessibility-layer', 'visibility', layers.roadAccessibility ? 'visible' : 'none');
         if (map.getLayer('road-casing-layer')) {
@@ -635,27 +788,32 @@ export const MapView: React.FC<MapViewProps> = ({
     }
 
     if (layers.incidents) {
+      const seenIncidents = new Set<string>();
       incidents.forEach((feat: any) => {
+        if (seenIncidents.has(feat.id)) return;
+        seenIncidents.add(feat.id);
+
         const isBlocked = feat.roadStatus === 'BLOCKED';
         const color = isBlocked ? '#dc2626' : '#ea580c';
 
         const el = document.createElement('div');
-        el.className = 'cursor-pointer select-none transition-transform hover:scale-125';
+        el.className = 'cursor-pointer select-none transition-transform hover:scale-110';
         el.innerHTML = `
-          <div style="position: relative; display: flex; align-items: center; justify-content: center;">
-            ${isBlocked ? `<div style="position: absolute; width: 44px; height: 44px; border-radius: 9999px; background: rgba(239, 68, 68, 0.35); border: 2px solid #ef4444; animation: ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>` : ''}
-            <div style="display: flex; align-items: center; gap: 5px; background: white; border: 2px solid ${color}; border-radius: 9999px; padding: 3px 10px 3px 4px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 10;">
-              <div style="width: 20px; height: 20px; border-radius: 9999px; background: ${color}; color: white; display: flex; align-items: center; justify-content: center;">
-                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <div style="display: flex; flex-direction: column; align-items: center; filter: drop-shadow(0 4px 12px rgba(0,0,0,0.3));">
+            <div style="display: flex; align-items: center; gap: 5px; background: #ffffff; border: 1.5px solid ${color}; border-radius: 9999px; padding: 3px 9px 3px 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.18);">
+              <div style="width: 18px; height: 18px; border-radius: 9999px; background: ${color}; color: white; display: flex; align-items: center; justify-content: center;">
+                <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                   <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
                   <line x1="12" y1="9" x2="12" y2="13"/>
                   <line x1="12" y1="17" x2="12.01" y2="17"/>
                 </svg>
               </div>
-              <span style="font-size: 11px; font-weight: 900; color: #0f172a; white-space: nowrap; letter-spacing: -0.2px;">
+              <span style="font-size: 10.5px; font-weight: 800; color: #0f172a; white-space: nowrap; letter-spacing: -0.2px;">
                 ${feat.type.toUpperCase()}: ${feat.roadStatus}
               </span>
             </div>
+            <div style="width: 2px; height: 6px; background: ${color};"></div>
+            <div style="width: 5px; height: 5px; border-radius: 9999px; background: ${color}; border: 1px solid white;"></div>
           </div>
         `;
 
@@ -663,7 +821,7 @@ export const MapView: React.FC<MapViewProps> = ({
           e.stopPropagation();
           setSelectedIncident(feat);
 
-          new maplibregl.Popup({ offset: 12 })
+          new maplibregl.Popup({ offset: 14 })
             .setLngLat(feat.coordinates)
             .setHTML(`
               <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 4px 6px; min-width: 220px;">
@@ -690,7 +848,7 @@ export const MapView: React.FC<MapViewProps> = ({
             .addTo(map);
         });
 
-        const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
+        const marker = new maplibregl.Marker({ element: el, anchor: 'bottom' })
           .setLngLat(feat.coordinates)
           .addTo(map);
 

@@ -2,7 +2,6 @@ import { create } from 'zustand';
 import { Vehicle, Incident, RoadStatus, LanguageCode, PriorityLevel } from '../types';
 import initialVehicles from '../data/vehicles.json';
 import initialIncidents from '../data/incidents.json';
-import roadsGeoJSON from '../data/roads.geojson';
 
 interface LayerState {
   hazardRisk: boolean;
@@ -17,6 +16,18 @@ export interface ToastNotification {
   title: string;
   body: string;
   type: 'danger' | 'success' | 'info';
+}
+
+export interface AlertItem {
+  id: string;
+  severity: PriorityLevel;
+  corridor: string;
+  title: string;
+  message: string;
+  timestamp: string;
+  lang: string;
+  recipient: string;
+  vehicles: string[];
 }
 
 interface PathSetuState {
@@ -46,6 +57,7 @@ interface PathSetuState {
   roadStatuses: Record<string, RoadStatus>;
   vehicles: Vehicle[];
   incidents: Incident[];
+  alerts: AlertItem[];
   regionalRiskIndex: number;
   supplyStatus: {
     food: number;
@@ -99,7 +111,34 @@ const baseVehicles: Vehicle[] = (initialVehicles as Vehicle[]).map((v) => ({
   currentRouteId: v.id === 'VEH-104' ? 'NH-37' : v.currentRouteId,
   currentLocationName: v.id === 'VEH-104' ? 'NH-37 (Guwahati–Nagaon Corridor)' : v.currentLocationName,
   destination: v.id === 'VEH-104' ? 'Jorhat Central Hospital, Upper Assam' : v.destination,
+  lastUpdateSec: 0,
+  trailCoordinates: [v.coordinates],
 }));
+
+const baseAlerts: AlertItem[] = [
+  {
+    id: 'ALT-002',
+    severity: 'HIGH',
+    corridor: 'NH-6 (Jowai – Silchar Corridor)',
+    title: 'ROAD RESTRICTED — Single Lane Subsidence',
+    message: 'Single-file convoy escort in effect. Heavy vehicles advised to proceed with caution near Sonapur tunnel.',
+    timestamp: '10:15 HRS',
+    lang: 'English',
+    recipient: 'VEH-312 · Medical Oxygen',
+    vehicles: ['VEH-312'],
+  },
+  {
+    id: 'ALT-005',
+    severity: 'NORMAL',
+    corridor: 'NH-29 (Dimapur – Kohima Lifeline)',
+    title: 'TRANSIT UPDATE — Mountain Route Open',
+    message: 'All commercial freight passing normally through Medziphema checkpoint.',
+    timestamp: '08:30 HRS',
+    lang: 'English',
+    recipient: 'VEH-409 · Construction Materials',
+    vehicles: ['VEH-409'],
+  }
+];
 
 export const usePathSetuStore = create<PathSetuState>((set, get) => ({
   activeTab: 'Dashboard',
@@ -123,7 +162,7 @@ export const usePathSetuStore = create<PathSetuState>((set, get) => ({
   setFocusCoordinates: (coords) => set({ focusCoordinates: coords }),
 
   layers: {
-    hazardRisk: false,
+    hazardRisk: true,
     roadAccessibility: true,
     bridges: true,
     activeVehicles: true,
@@ -140,7 +179,8 @@ export const usePathSetuStore = create<PathSetuState>((set, get) => ({
     'ALT-ROUTE-B': 'OPEN',
   },
   vehicles: baseVehicles,
-  incidents: [],
+  incidents: initialIncidents as Incident[],
+  alerts: baseAlerts,
   regionalRiskIndex: 32,
   supplyStatus: {
     food: 96,
@@ -197,8 +237,34 @@ export const usePathSetuStore = create<PathSetuState>((set, get) => ({
       source: 'Field Sentinel Landslide Sensor',
     };
 
+    const simulatedAlerts: AlertItem[] = [
+      {
+        id: 'ALT-001',
+        severity: 'CRITICAL',
+        corridor: 'NH-37 (Kaziranga / Upper Assam Sector)',
+        title: 'ROAD BLOCKED — Landslide Disruption Detected',
+        message: 'Major mud & boulder slide blocking both lanes at Km 142. VEH-104 halted before blockage. Bypass via ALT-ROUTE-B activated.',
+        timestamp: '09:42 HRS',
+        lang: 'Assamese',
+        recipient: 'VEH-104 · Emergency Medicine (Critical)',
+        vehicles: ['VEH-104'],
+      },
+      {
+        id: 'ALT-003',
+        severity: 'CRITICAL',
+        corridor: 'NH-37 Kaziranga / Golaghat Bypass',
+        title: 'CONVOY REROUTE MANDATE — Emergency Medicine',
+        message: 'Emergency Medicine convoy halted before blockage at Nagaon Junction. Reroute via Golaghat bypass ready (+45 min).',
+        timestamp: '09:44 HRS',
+        lang: 'Mizo',
+        recipient: 'VEH-104 · Emergency Medicine',
+        vehicles: ['VEH-104'],
+      },
+      ...baseAlerts,
+    ];
+
     set((state) => {
-      const junctionCoords: [number, number] = [92.8446, 25.9820];
+      const junctionCoords: [number, number] = [92.6841, 26.3450];
       const updatedVehicles = state.vehicles.map((v) =>
         v.id === 'VEH-104'
           ? {
@@ -208,6 +274,12 @@ export const usePathSetuStore = create<PathSetuState>((set, get) => ({
               eta: '5h 05m (+4h Blockage Delay)',
               coordinates: junctionCoords,
               currentLocationName: 'NH-37 (Halted near Nagaon Junction — Blockage Ahead)',
+            }
+          : v.id === 'VEH-205'
+          ? {
+              ...v,
+              routeAtRisk: true,
+              eta: '7h 20m (+2h Delay)',
             }
           : v
       );
@@ -221,7 +293,8 @@ export const usePathSetuStore = create<PathSetuState>((set, get) => ({
           'NH-37': 'BLOCKED',
           'ALT-ROUTE-B': 'OPEN',
         },
-        incidents: [landslideIncident],
+        incidents: [landslideIncident, ...(initialIncidents as Incident[])],
+        alerts: simulatedAlerts,
         vehicles: updatedVehicles,
         selectedVehicle: targetVehicle,
         selectedVehicleId: targetVehicle.id,
@@ -242,7 +315,7 @@ export const usePathSetuStore = create<PathSetuState>((set, get) => ({
         routeDecisionModalOpen: true,
         toastNotification: {
           title: 'LANDSLIDE DISRUPTION DETECTED',
-          body: 'NH-37 is blocked. VEH-104 halted before blockage. Alternative Haflong bypass ready.',
+          body: 'NH-37 is blocked at Km 142. VEH-104 halted before blockage. Golaghat bypass activated.',
           type: 'danger',
         },
       };
@@ -260,7 +333,8 @@ export const usePathSetuStore = create<PathSetuState>((set, get) => ({
         'ALT-ROUTE-B': 'OPEN',
       },
       vehicles: baseVehicles,
-      incidents: [],
+      incidents: initialIncidents as Incident[],
+      alerts: baseAlerts,
       regionalRiskIndex: 32,
       supplyStatus: {
         food: 96,
@@ -280,7 +354,7 @@ export const usePathSetuStore = create<PathSetuState>((set, get) => ({
       selectedIncident: null,
       toastNotification: {
         title: 'NORMAL OPERATIONS RESTORED',
-        body: 'All highway corridors open. Fleet telemetry live with standard schedules.',
+        body: 'All highway corridors operational. Fleet telemetry live with standard schedules.',
         type: 'info',
       },
     });
@@ -288,7 +362,7 @@ export const usePathSetuStore = create<PathSetuState>((set, get) => ({
 
   acceptReroute: (vehicleId: string) => {
     set((state) => {
-      const junctionCoords: [number, number] = [92.8446, 25.9820];
+      const junctionCoords: [number, number] = [92.6841, 26.3450];
       const updatedVehicles = state.vehicles.map((v) =>
         v.id === vehicleId
           ? {
@@ -298,87 +372,111 @@ export const usePathSetuStore = create<PathSetuState>((set, get) => ({
               routeAtRisk: false,
               eta: '5h 50m (Bypass Active)',
               coordinates: junctionCoords,
-              currentLocationName: 'ALT-ROUTE-B (Hojai–Haflong Mountain Bypass)',
+              currentLocationName: 'ALT-ROUTE-B (Golaghat Bypass Corridor)',
             }
           : v
       );
+
+      const rerouteAlert: AlertItem = {
+        id: `ALT-REROUTE-${Date.now().toString().slice(-4)}`,
+        severity: 'NORMAL',
+        corridor: 'ALT-ROUTE-B (Golaghat Bypass Corridor)',
+        title: 'REROUTE APPROVED — Convoy Resuming Transit',
+        message: `${vehicleId} diverted via ALT-ROUTE-B to Jorhat Central Hospital. Active Navigation ETA: 5h 50m.`,
+        timestamp: 'Just now',
+        lang: 'English',
+        recipient: `${vehicleId} · Emergency Medicine`,
+        vehicles: [vehicleId],
+      };
 
       const targetVehicle = updatedVehicles.find((v) => v.id === vehicleId) || state.selectedVehicle;
 
       return {
         vehicles: updatedVehicles,
         selectedVehicle: targetVehicle,
-        focusCoordinates: targetVehicle?.coordinates || null,
+        focusCoordinates: junctionCoords,
+        alerts: [rerouteAlert, ...state.alerts],
+        roadStatuses: {
+          ...state.roadStatuses,
+          'ALT-ROUTE-B': 'REROUTED',
+        },
+        supplyStatus: {
+          ...state.supplyStatus,
+          medicine: 88,
+          districtsAtRisk: 1,
+        },
+        districtConnectivity: {
+          accessible: 14,
+          restricted: 3,
+          blocked: 1,
+        },
+        regionalRiskIndex: 42,
         routeDecisionModalOpen: false,
         toastNotification: {
-          title: '✅ REROUTE APPROVED',
-          body: 'VEH-104 diverted via ALT-ROUTE-B (Bypass Corridor) to Jorhat Central Hospital. ETA: 5h 50m.',
+          title: 'REROUTE ACCEPTED & DISPATCHED',
+          body: `${vehicleId} successfully rerouted via Golaghat Bypass to Jorhat Hospital. ETA: 5h 50m.`,
           type: 'success',
         },
       };
     });
   },
 
-  updateVehiclePosition: (vehicleId: string, coordinates: [number, number], additionalProps?: Partial<Vehicle>) => {
+  updateVehiclePosition: (vehicleId, coordinates, additionalProps) => {
     set((state) => {
       const updatedVehicles = state.vehicles.map((v) => {
         if (v.id === vehicleId) {
-          const pastTrails = v.trailCoordinates || [v.coordinates];
-          const newTrails = [...pastTrails.slice(-20), coordinates];
+          const trail = v.trailCoordinates || [];
           return {
             ...v,
             coordinates,
-            trailCoordinates: newTrails,
-            lastUpdateSec: 1,
-            ...(additionalProps || {}),
+            trailCoordinates: [...trail.slice(-19), coordinates],
+            lastUpdateSec: (v.lastUpdateSec || 0) + 1,
+            ...additionalProps,
           };
         }
-        return {
-          ...v,
-          lastUpdateSec: Math.min((v.lastUpdateSec || 2) + 1, 60),
-        };
+        return v;
       });
 
-      const updatedSelectedVehicle =
-        state.selectedVehicle?.id === vehicleId
+      const updatedSelected =
+        state.selectedVehicle && state.selectedVehicle.id === vehicleId
           ? updatedVehicles.find((v) => v.id === vehicleId) || state.selectedVehicle
           : state.selectedVehicle;
 
       return {
         vehicles: updatedVehicles,
-        selectedVehicle: updatedSelectedVehicle,
+        selectedVehicle: updatedSelected,
       };
     });
   },
 
-  setSelectedVehicle: (vehicle) =>
+  setSelectedVehicle: (vehicle) => {
     set({
       selectedVehicle: vehicle,
-      selectedVehicleId: vehicle?.id || null,
-      focusCoordinates: vehicle?.coordinates || null,
-    }),
-  setSelectedIncident: (incident) => set({ selectedIncident: incident }),
+      selectedVehicleId: vehicle ? vehicle.id : null,
+      selectedIncident: null,
+      focusCoordinates: vehicle ? vehicle.coordinates : null,
+    });
+  },
 
-  openRouteDecision: (vehicle) =>
-    set({
-      selectedVehicle: vehicle || get().vehicles[0],
-      routeDecisionModalOpen: true,
-    }),
-
-  openAlertBroadcast: () => set({ alertBroadcastModalOpen: true }),
-
-  openVehicleDetail: (vehicle) =>
-    set({
-      selectedVehicle: vehicle,
-      vehicleDetailModalOpen: true,
-    }),
-
-  openIncidentDetail: (incident) =>
+  setSelectedIncident: (incident) => {
     set({
       selectedIncident: incident,
-      incidentDetailModalOpen: true,
-    }),
+      selectedVehicle: null,
+      selectedVehicleId: null,
+      focusCoordinates: incident ? incident.coordinates : null,
+    });
+  },
 
+  openRouteDecision: (vehicle) => {
+    if (vehicle) {
+      set({ selectedVehicle: vehicle, selectedVehicleId: vehicle.id });
+    }
+    set({ routeDecisionModalOpen: true });
+  },
+
+  openAlertBroadcast: () => set({ alertBroadcastModalOpen: true }),
+  openVehicleDetail: (vehicle) => set({ selectedVehicle: vehicle, selectedVehicleId: vehicle.id, vehicleDetailModalOpen: true }),
+  openIncidentDetail: (incident) => set({ selectedIncident: incident, incidentDetailModalOpen: true }),
   closeModals: () =>
     set({
       routeDecisionModalOpen: false,
@@ -392,95 +490,77 @@ export const usePathSetuStore = create<PathSetuState>((set, get) => ({
   setOfflineMode: (offline) => set({ isOffline: offline }),
 
   submitFieldReport: (report) => {
+    const isOffline = get().isOffline;
     const newIncident: Incident = {
       ...report,
       id: `INC-${Date.now().toString().slice(-4)}`,
-      timeLogged: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) + ' HRS',
-      syncStatus: get().isOffline ? 'PENDING' : 'SYNCED',
+      timeLogged: 'Just now',
+      syncStatus: isOffline ? 'PENDING' : 'SYNCED',
     };
 
-    if (get().isOffline) {
+    if (isOffline) {
       set((state) => ({
-        offlineQueue: [newIncident, ...state.offlineQueue],
+        offlineQueue: [...state.offlineQueue, newIncident],
         toastNotification: {
-          title: 'REPORT QUEUED (OFFLINE)',
-          body: `${newIncident.type} on ${newIncident.roadSegmentId} saved to offline local queue.`,
+          title: 'SAVED OFFLINE (PENDING SYNC)',
+          body: 'Incident queued locally in IndexedDB cache.',
           type: 'info',
         },
       }));
     } else {
-      set((state) => {
-        const updatedRoadStatuses = {
-          ...state.roadStatuses,
-          [newIncident.roadSegmentId]: newIncident.roadStatus,
-        };
+      const isBlocked = report.roadStatus === 'BLOCKED';
+      const updatedStatuses = { ...get().roadStatuses };
+      if (report.roadSegmentId) {
+        updatedStatuses[report.roadSegmentId] = report.roadStatus;
+      }
 
-        const isDisrupted = newIncident.roadStatus === 'BLOCKED' || newIncident.roadStatus === 'RESTRICTED';
-        const updatedVehicles = state.vehicles.map((v) =>
-          v.currentRouteId === newIncident.roadSegmentId
-            ? { ...v, routeAtRisk: isDisrupted }
-            : v
-        );
-
-        return {
-          incidents: [newIncident, ...state.incidents],
-          roadStatuses: updatedRoadStatuses,
-          vehicles: updatedVehicles,
-          selectedIncident: newIncident,
-          focusCoordinates: newIncident.coordinates,
-          regionalRiskIndex: Math.min(state.regionalRiskIndex + 15, 95),
-          districtConnectivity: {
-            ...state.districtConnectivity,
-            blocked: newIncident.roadStatus === 'BLOCKED' ? state.districtConnectivity.blocked + 1 : state.districtConnectivity.blocked,
-            restricted: newIncident.roadStatus === 'RESTRICTED' ? state.districtConnectivity.restricted + 1 : state.districtConnectivity.restricted,
-          },
-          toastNotification: {
-            title: 'FIELD REPORT SUBMITTED',
-            body: `${newIncident.type} logged on ${newIncident.roadSegmentId}. Road status updated to ${newIncident.roadStatus}.`,
-            type: isDisrupted ? 'danger' : 'info',
-          },
-        };
-      });
+      set((state) => ({
+        incidents: [newIncident, ...state.incidents],
+        roadStatuses: updatedStatuses,
+        regionalRiskIndex: Math.min(95, state.regionalRiskIndex + (isBlocked ? 15 : 6)),
+        districtConnectivity: {
+          ...state.districtConnectivity,
+          blocked: state.districtConnectivity.blocked + (isBlocked ? 1 : 0),
+          restricted: state.districtConnectivity.restricted + (!isBlocked ? 1 : 0),
+        },
+        toastNotification: {
+          title: 'FIELD REPORT SUBMITTED',
+          body: 'Incident verified & synchronized across intelligence network.',
+          type: 'success',
+        },
+      }));
     }
   },
 
   syncOfflineQueue: () => {
-    const queue = get().offlineQueue;
-    if (queue.length === 0) return;
-
     set({ isSyncing: true });
-
     setTimeout(() => {
-      const synced = queue.map((item) => ({ ...item, syncStatus: 'SYNCED' as const }));
-
-      set((state) => {
-        let updatedRoadStatuses = { ...state.roadStatuses };
-        synced.forEach((inc) => {
-          updatedRoadStatuses[inc.roadSegmentId] = inc.roadStatus;
-        });
-
-        const updatedVehicles = state.vehicles.map((v) => {
-          const matchingInc = synced.find((inc) => inc.roadSegmentId === v.currentRouteId);
-          if (matchingInc && (matchingInc.roadStatus === 'BLOCKED' || matchingInc.roadStatus === 'RESTRICTED')) {
-            return { ...v, routeAtRisk: true };
-          }
-          return v;
-        });
-
-        return {
-          incidents: [...synced, ...state.incidents],
-          roadStatuses: updatedRoadStatuses,
-          vehicles: updatedVehicles,
-          offlineQueue: [],
-          isOffline: false,
-          isSyncing: false,
-          toastNotification: {
-            title: 'SYNC COMPLETED',
-            body: `${synced.length} field reports synced to central operations dashboard.`,
-            type: 'success',
-          },
-        };
+      const queue = get().offlineQueue;
+      const updatedStatuses = { ...get().roadStatuses };
+      
+      queue.forEach((item) => {
+        if (item.roadSegmentId) {
+          updatedStatuses[item.roadSegmentId] = item.roadStatus;
+        }
       });
-    }, 700);
+
+      const syncedItems: Incident[] = queue.map((item) => ({
+        ...item,
+        syncStatus: 'SYNCED' as const,
+      }));
+
+      set((state) => ({
+        isOffline: false,
+        isSyncing: false,
+        offlineQueue: [],
+        incidents: [...syncedItems, ...state.incidents],
+        roadStatuses: updatedStatuses,
+        toastNotification: {
+          title: 'OFFLINE SYNC COMPLETED',
+          body: 'All cached telemetry synced to central dashboard.',
+          type: 'success',
+        },
+      }));
+    }, 500);
   },
 }));
