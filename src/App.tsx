@@ -7,6 +7,7 @@ import { VehicleDetailModal } from './components/modals/VehicleDetailModal';
 import { IncidentDetailModal } from './components/modals/IncidentDetailModal';
 import { AlertBroadcastModal } from './components/modals/AlertBroadcastModal';
 import { usePathSetuStore } from './store/usePathSetuStore';
+import { playMultilingualAlert } from './utils/audio';
 
 
 
@@ -194,6 +195,26 @@ const Drawer: React.FC = () => {
   );
 };
 
+const ToastContainer: React.FC = () => {
+  const { toastNotification, setToastNotification } = usePathSetuStore() as any;
+  React.useEffect(() => {
+    if (toastNotification) {
+      const t = setTimeout(() => setToastNotification(null), 4000);
+      return () => clearTimeout(t);
+    }
+  }, [toastNotification, setToastNotification]);
+  if (!toastNotification) return null;
+  const cls = toastNotification.type === 'danger' ? 'crit' : toastNotification.type === 'success' ? 'ok' : 'warn';
+  return (
+    <div className="toast-stack">
+      <div className={`toast ${cls}`}>
+        <div className="ttitle">{toastNotification.title}</div>
+        <div className="tbody">{toastNotification.body}</div>
+      </div>
+    </div>
+  );
+};
+
 export const App: React.FC = () => {
   const { activeView, activeTab } = usePathSetuStore();
 
@@ -238,10 +259,7 @@ export const App: React.FC = () => {
           </div>
         ) : activeTab === 'Alerts' ? (
           <div className="view">
-            <div className="panel" style={{padding:'17px 19px'}}>
-              <div className="panel-title" style={{padding:'0 0 12px'}}>Multilingual Alert Log</div>
-              <AlertsView />
-            </div>
+            <AlertsView />
           </div>
         ) : activeTab === 'Analytics' ? (
           <AnalyticsView />
@@ -265,7 +283,7 @@ export const App: React.FC = () => {
       </main>
 
       <div className="footer-note">NER-PathSetu — prototype interface · mock intelligence data for demonstration · Smart India Hackathon</div>
-      <div className="toast-stack" id="toastStack"></div>
+      <ToastContainer />
 
       <RouteDecisionModal />
       <VehicleDetailModal />
@@ -431,22 +449,77 @@ const IncidentsView: React.FC = () => {
 };
 
 const AlertsView: React.FC = () => {
-  const alerts = [
-    { lang:'Assamese', msg:'NH-10 অগম্য। বিকল্প পথ পোৱা গৈছে।', recipient:'Truck #17 · Medicine', time:'—' },
-    { lang:'English', msg:'NH-6 is blocked due to flooding. Reroute applied.', recipient:'Truck #09 · Fuel', time:'2 hr ago' },
-    { lang:'Mizo', msg:'NH-6 kalh a buai — kawng dang hmang rawh.', recipient:'Truck #09 · Fuel', time:'2 hr ago' },
+  const { selectedLanguage, setSelectedLanguage } = usePathSetuStore() as any;
+  const [filter, setFilter] = React.useState<'all'|'critical'|'high'>('all');
+  const [q, setQ] = React.useState('');
+  const alertsData = [
+    { id:'ALT-001', severity:'CRITICAL', corridor:'NH-37 (Dima Hasao / Kaziranga Sector)', title:'ROAD BLOCKED — Landslide Detected', message:'Major landslide blocking NH-37. Alternate Route B (Bypass) is recommended (+45 min delay).', timestamp:'09:42 HRS', lang:'Assamese', recipient:'VEH-104 · Emergency Medicine', vehicles:['VEH-104'] },
+    { id:'ALT-002', severity:'HIGH', corridor:'NH-6 (Jowai – Silchar Corridor)', title:'ROAD RESTRICTED — Single Lane Subsidence', message:'Single-file convoy escort in effect. Heavy vehicles advised to proceed with caution.', timestamp:'10:15 HRS', lang:'English', recipient:'VEH-205 · Food Supplies', vehicles:['VEH-205'] },
+    { id:'ALT-003', severity:'CRITICAL', corridor:'NH-37 Kaziranga / Jiribam', title:'VEHICLE AT RISK — VEH-104 Halted', message:'Emergency Medicine convoy halted before blockage at Nagaon Junction. Reroute via Golaghat bypass ready.', timestamp:'09:44 HRS', lang:'Mizo', recipient:'VEH-104 · Emergency Medicine', vehicles:['VEH-104'] },
   ];
+  const filtered = alertsData.filter(a=>{
+    const f = filter==='all' ? true : filter==='critical' ? a.severity==='CRITICAL' : a.severity==='HIGH';
+    const s = !q || `${a.title} ${a.corridor} ${a.message} ${a.recipient}`.toLowerCase().includes(q.toLowerCase());
+    return f && s;
+  });
+  const critCount = alertsData.filter(a=>a.severity==='CRITICAL').length;
   return (
-    <div className="card-list">
-      {alerts.map(a=>(
-        <div key={a.lang+a.msg} className="inc-card">
-          <div className="inc-ico warn">🔊</div>
-          <div className="inc-body">
-            <div className="inc-top"><div className="inc-title">{a.lang} · {a.recipient}</div><div className="inc-time">{a.time}</div></div>
-            <div className="inc-meta">{a.msg}</div>
+    <div className="panel" style={{overflow:'hidden'}}>
+      <div style={{padding:'18px 18px 14px', borderBottom:'1px solid var(--border-soft)', background:'var(--surface)'}}>
+        <div style={{display:'flex',justifyContent:'space-between',gap:12,flexWrap:'wrap',alignItems:'flex-start'}}>
+          <div>
+            <div style={{fontFamily:'Space Grotesk',fontSize:18,fontWeight:700,lineHeight:1}}>Multilingual Alert Log</div>
+            <div style={{fontSize:12.5,color:'var(--text-dim)',marginTop:4}}>{alertsData.length} broadcasts · {critCount} critical · Voice + text in 6 languages · Last sync just now</div>
+          </div>
+          <div style={{display:'flex',gap:8,alignItems:'center'}}>
+            <div style={{position:'relative'}}>
+              <input value={q} onChange={e=>setQ(e.target.value)} placeholder="Search corridor, vehicle…" style={{width:210,padding:'8px 32px 8px 10px',borderRadius:10,border:'1px solid var(--border)',background:'var(--surface)',fontSize:12.5,outline:'none'}} />
+              <span style={{position:'absolute',right:10,top:'50%',transform:'translateY(-50%)',fontSize:12, color:'var(--text-faint)'}}>⌕</span>
+            </div>
+            <select value={selectedLanguage} onChange={e=> (setSelectedLanguage as any)(e.target.value)} style={{padding:'8px 10px',borderRadius:10,border:'1px solid var(--border)',background:'var(--surface-2)',fontSize:12, fontWeight:600}}>
+              <option value="en">EN</option><option value="as">AS</option><option value="mni">MNI</option><option value="lus">Mizo</option><option value="kha">Kha</option><option value="brx">Bodo</option>
+            </select>
           </div>
         </div>
-      ))}
+        <div className="filter-row" style={{marginTop:14,marginBottom:0}}>
+          {(['all','critical','high'] as const).map(t=>(
+            <button key={t} className={`filter-chip ${filter===t?'active':''}`} onClick={()=>setFilter(t)}>
+              {t==='all'?'All': t==='critical'?'Critical':'High'} {t==='all'?`· ${alertsData.length}`: t==='critical'?`· ${critCount}`:`· ${alertsData.length-critCount}`}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="card-list" style={{padding:'12px 12px 16px', display:'flex', flexDirection:'column', gap:10, background:'var(--ink)'}}>
+        {filtered.map(a=>(
+          <div key={a.id} className="inc-card" style={{background:'var(--surface)', borderLeft:`4px solid ${a.severity==='CRITICAL'?'var(--crit)':'var(--warn)'}`, borderRadius:14, paddingLeft:22}}>
+            <div className={`inc-ico ${a.severity==='CRITICAL'?'crit':'warn'}`} style={{marginTop:2, flexShrink:0}}>🔊</div>
+            <div className="inc-body" style={{minWidth:0, flex:1}}>
+              <div style={{display:'flex', justifyContent:'space-between', gap:12, alignItems:'flex-start'}}>
+                <div style={{flex:1, minWidth:0}}>
+                  <div style={{fontWeight:700, fontSize:14, lineHeight:1.3, color:'var(--text)'}}>{a.title}</div>
+                  <div style={{fontSize:12, color:'var(--text-dim)', marginTop:2}}>{a.corridor} · {a.recipient}</div>
+                  <div style={{fontSize:12, color:'var(--text)', marginTop:6, lineHeight:1.5, background:'var(--surface-2)', border:'1px solid var(--border-soft)', borderRadius:10, padding:'8px 10px'}}>{a.message}</div>
+                  <div className="mono" style={{fontSize:11, color:'var(--text-faint)', marginTop:6}}>{a.lang} · {a.vehicles.join(', ')} · {a.timestamp}</div>
+                </div>
+                <div className="mono" style={{whiteSpace:'nowrap', fontSize:11, fontWeight:600, color:'var(--text-faint)', background:'var(--surface-2)', padding:'5px 9px', borderRadius:9, border:'1px solid var(--border-soft)', flexShrink:0}}>{a.timestamp}</div>
+              </div>
+              <div style={{marginTop:10, display:'flex', gap:7, flexWrap:'wrap', alignItems:'center'}}>
+                <span className="tag" style={{background: a.severity==='CRITICAL'?'var(--crit-dim)':'var(--warn-dim)', color: a.severity==='CRITICAL'?'var(--crit)':'var(--warn)', borderColor:'transparent', fontWeight:800, padding:'3px 8px'}}>{a.severity}</span>
+                <span className="tag" style={{background:'var(--surface-2)', border:'1px solid var(--border-soft)'}}>{a.corridor.split('(')[0].trim()}</span>
+                <span style={{marginLeft:'auto', display:'flex', gap:6}}>
+                  <button className="btn" style={{padding:'6px 10px', fontSize:11}} onClick={()=> playMultilingualAlert(selectedLanguage)}>🔊 Play {a.lang}</button>
+                  <button className="btn btn-primary" style={{padding:'6px 10px', fontSize:11}} onClick={()=>{}}>View corridor</button>
+                </span>
+              </div>
+            </div>
+          </div>
+        ))}
+        {filtered.length===0 && <div style={{textAlign:'center',padding:30,color:'var(--text-faint)',background:'var(--surface)',border:'1px solid var(--border-soft)',borderRadius:14}}>No alerts match filter.</div>}
+      </div>
+      <div style={{padding:'10px 14px', borderTop:'1px solid var(--border-soft)', background:'var(--surface-2)', display:'flex', justifyContent:'space-between', fontSize:11.5, color:'var(--text-faint)'}}>
+        <span>Broadcasts are sent via gateway in selected language · TTS available offline</span>
+        <span className="mono">{filtered.length}/{alertsData.length}</span>
+      </div>
     </div>
   );
 };

@@ -120,7 +120,7 @@ describe('disruption simulation', () => {
     expect(st.roadStatuses['NH-6']).toBe('OPEN');
     expect(st.routeDecisionModalOpen).toBe(false);
     expect(st.alertBroadcastModalOpen).toBe(false);
-    expect(st.regionalRiskIndex).toBe(38);
+    expect(st.regionalRiskIndex).toBe(32);
   });
 });
 

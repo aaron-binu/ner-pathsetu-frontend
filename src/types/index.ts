@@ -1,5 +1,5 @@
 export type PriorityLevel = 'CRITICAL' | 'HIGH' | 'NORMAL' | 'LOW';
-export type RoadStatus = 'OPEN' | 'RESTRICTED' | 'BLOCKED';
+export type RoadStatus = 'OPEN' | 'RESTRICTED' | 'BLOCKED' | 'REROUTED' | 'RECOMMENDED' | 'NORMAL_TRIP' | 'BACKGROUND_DIM';
 export type SyncStatus = 'PENDING' | 'SYNCING' | 'SYNCED';
 export type LanguageCode = 'en' | 'as' | 'mni' | 'lus' | 'kha' | 'brx';
 

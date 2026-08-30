@@ -20,7 +20,7 @@ export interface ToastNotification {
 }
 
 interface PathSetuState {
-  activeTab: 'Dashboard' | 'Map' | 'Logistics' | 'Incidents' | 'Alerts' | 'Analytics' | 'Fleet' | 'Archive';
+  activeTab: 'Dashboard' | 'Analytics' | 'Fleet' | 'Archive';
   leftSidebarTab: 'fleet' | 'risk' | 'intel';
   activeView: 'dashboard' | 'field-sentinel';
   routeDecisionModalOpen: boolean;
@@ -70,7 +70,7 @@ interface PathSetuState {
   toggleLeftSidebar: () => void;
   toggleRightSidebar: () => void;
 
-  setActiveTab: (tab: 'Dashboard' | 'Map' | 'Logistics' | 'Incidents' | 'Alerts' | 'Analytics' | 'Fleet' | 'Archive') => void;
+  setActiveTab: (tab: 'Dashboard' | 'Analytics' | 'Fleet' | 'Archive') => void;
   setLeftSidebarTab: (tab: 'fleet' | 'risk' | 'intel') => void;
   setActiveView: (view: 'dashboard' | 'field-sentinel') => void;
   toggleLayer: (layer: keyof LayerState) => void;

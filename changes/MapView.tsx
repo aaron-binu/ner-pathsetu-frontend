@@ -130,20 +130,11 @@ export const MapView: React.FC<MapViewProps> = ({
 
   useEffect(() => {
     if (mapRef.current) {
-      const t = setTimeout(() => mapRef.current?.resize(), 100);
-      const t2 = setTimeout(() => mapRef.current?.resize(), 400);
-      return () => { clearTimeout(t); clearTimeout(t2); };
+      setTimeout(() => {
+        mapRef.current?.resize();
+      }, 150);
     }
-  }, [leftSidebarOpen, rightSidebarOpen, mapLoaded]);
-
-  useEffect(() => {
-    if (!mapRef.current || !mapContainerRef.current) return;
-    const ro = new ResizeObserver(() => mapRef.current?.resize());
-    ro.observe(mapContainerRef.current);
-    const wrap = mapContainerRef.current.parentElement;
-    if (wrap) ro.observe(wrap);
-    return () => ro.disconnect();
-  }, [mapLoaded]);
+  }, [leftSidebarOpen, rightSidebarOpen]);
 
   useEffect(() => {
     if (!mapRef.current || !focusCoordinates) return;
@@ -405,7 +396,6 @@ export const MapView: React.FC<MapViewProps> = ({
           });
         });
       });
-      map.on('idle', () => setMapLoaded(true));
 
       mapRef.current = map;
     } catch (err) {
@@ -966,66 +956,50 @@ export const MapView: React.FC<MapViewProps> = ({
   }, [isTrackingPlaying, vehicles, updateVehiclePosition, bypassCoords]);
 
   return (
-    <div className={`relative w-full h-full bg-[#FBF2E1] overflow-hidden select-none ${className}`}>
+    <div className={`relative ${className} bg-slate-100 overflow-hidden select-none`}>
       <IntelligenceDock />
 
-      <div className="absolute top-2.5 left-2.5 z-20">
+      <div className="absolute top-3.5 left-3.5 z-20">
         <div className="relative">
           <button
             onClick={() => setLayersMenuOpen(!layersMenuOpen)}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm bg-white border border-[#E8D9BC] text-xs font-semibold text-[#2A211A] hover:bg-[#FBF2E1] transition-colors"
-            style={{backdropFilter:'blur(10px)', background:'rgba(255,255,255,.92)'}}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/95 backdrop-blur-sm border border-slate-200 shadow-sm text-xs font-bold text-slate-800 hover:bg-white transition-all"
           >
-            <Layers className="w-3.5 h-3.5 text-[#6E6252]" />
-            <span>Layers</span>
-            <ChevronDown className={`w-3 h-3 text-[#9C8F78] transition-transform ${layersMenuOpen ? 'rotate-180' : ''}`} />
+            <Layers className="w-3.5 h-3.5 text-blue-600" />
+            <span>MAP LAYERS</span>
+            <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${layersMenuOpen ? 'rotate-180' : ''}`} />
           </button>
 
           {layersMenuOpen && (
-            <div className="absolute top-full left-0 mt-1 w-[260px] bg-white border border-[#E8D9BC] rounded-sm p-1.5 z-30 text-xs animate-fadeIn" style={{boxShadow:'0 16px 36px -12px rgba(42,33,26,.25)'}}>
-              <div style={{padding:'4px 6px 6px',fontSize:'10px',fontWeight:700,letterSpacing:'.6px',color:'var(--text-faint)',textTransform:'uppercase'}}>Default</div>
+            <div className="absolute top-full left-0 mt-1.5 w-52 bg-white/95 backdrop-blur-md border border-slate-200 rounded-xl shadow-lg p-2.5 space-y-2 z-30 text-xs animate-fadeIn">
               {[
-                { key: 'roadAccessibility', label: 'Road Network', sw:'#A69A8A' },
-                { key: 'roadAccessibility', label: 'Road Status', sw:'#7CA36B' },
-                { key: 'hazardRisk', label: 'Risk Intensity', sw:'#C94F49' },
-              ].map(({ key, label, sw }) => {
+                { key: 'hazardRisk', label: 'Hazard Risk' },
+                { key: 'roadAccessibility', label: 'Road Accessibility' },
+                { key: 'bridges', label: 'Bridges' },
+                { key: 'activeVehicles', label: 'Active Vehicles' },
+                { key: 'incidents', label: 'Incidents' },
+                { key: 'waterways', label: 'Waterways' },
+              ].map(({ key, label }) => {
                 const isChecked = layers[key as keyof typeof layers];
                 return (
-                  <label key={label} className="layer-chip" style={{margin:'1px 0', padding:'6px 8px'}}>
-                    <input type="checkbox" checked={isChecked} onChange={()=>toggleLayer(key as keyof typeof layers)} />
-                    <span className="swatch" style={{background:sw}}></span>{label}<span className="check"></span>
-                  </label>
-                );
-              })}
-              <div style={{height:1,background:'var(--border-soft)',margin:'6px 0'}}></div>
-              <div style={{padding:'4px 6px 6px',fontSize:'10px',fontWeight:700,letterSpacing:'.6px',color:'var(--text-faint)',textTransform:'uppercase'}}>Hazard</div>
-              {[
-                { key: 'waterways', label: 'Waterways', sw:'#6C93A8' },
-                { key: 'hazardRisk', label: 'Landslide Zones', sw:'#B97A4E' },
-                { key: 'hazardRisk', label: 'Ground Movement', sw:'#B08FB0' },
-              ].map(({ key, label, sw }) => {
-                const isChecked = layers[key as keyof typeof layers];
-                return (
-                  <label key={label} className="layer-chip" style={{margin:'1px 0', padding:'6px 8px'}}>
-                    <input type="checkbox" checked={isChecked} onChange={()=>toggleLayer(key as keyof typeof layers)} />
-                    <span className="swatch" style={{background:sw}}></span>{label}<span className="check"></span>
-                  </label>
-                );
-              })}
-              <div style={{height:1,background:'var(--border-soft)',margin:'6px 0'}}></div>
-              <div style={{padding:'4px 6px 6px',fontSize:'10px',fontWeight:700,letterSpacing:'.6px',color:'var(--text-faint)',textTransform:'uppercase'}}>Infrastructure</div>
-              {[
-                { key: 'bridges', label: 'Bridges', sw:'#ADA08D' },
-                { key: 'activeVehicles', label: 'Vehicles', sw:'#E2726B' },
-                { key: 'incidents', label: 'Incidents', sw:'#C94F49' },
-                { key: 'waterways', label: 'Ferry Terminals', sw:'#6C93A8' },
-              ].map(({ key, label, sw }) => {
-                const isChecked = layers[key as keyof typeof layers];
-                return (
-                  <label key={label} className="layer-chip" style={{margin:'1px 0', padding:'6px 8px'}}>
-                    <input type="checkbox" checked={isChecked} onChange={()=>toggleLayer(key as keyof typeof layers)} />
-                    <span className="swatch" style={{background:sw}}></span>{label}<span className="check"></span>
-                  </label>
+                  <div
+                    key={key}
+                    onClick={() => toggleLayer(key as keyof typeof layers)}
+                    className="flex items-center justify-between cursor-pointer hover:bg-slate-50 p-1 rounded-md transition-colors"
+                  >
+                    <span className="font-semibold text-slate-700 text-[11px]">{label}</span>
+                    <div
+                      className={`w-7 h-4 rounded-full transition-colors relative flex items-center p-0.5 ${
+                        isChecked ? 'bg-blue-600' : 'bg-slate-300'
+                      }`}
+                    >
+                      <div
+                        className={`w-3 h-3 rounded-full bg-white shadow-xs transition-transform ${
+                          isChecked ? 'translate-x-3' : 'translate-x-0'
+                        }`}
+                      />
+                    </div>
+                  </div>
                 );
               })}
             </div>
@@ -1033,31 +1007,31 @@ export const MapView: React.FC<MapViewProps> = ({
         </div>
       </div>
 
-      <div className="absolute top-2.5 right-2.5 z-20 flex flex-col bg-white border border-[#E8D9BC] rounded-sm p-0.5" style={{backdropFilter:'blur(10px)', background:'rgba(255,255,255,.92)'}}>
+      <div className="absolute top-3.5 right-3.5 z-20 flex flex-col gap-1 bg-white/95 backdrop-blur-sm border border-slate-200 rounded-lg p-1 shadow-sm">
         <button
           onClick={() => mapRef.current?.zoomIn()}
-          className="w-7 h-7 flex items-center justify-center hover:bg-[#FBF2E1] rounded-sm text-[#6E6252] hover:text-[#2A211A]"
-          title="Zoom in"
+          className="p-1.5 hover:bg-slate-100 rounded text-slate-600 hover:text-slate-900 transition-colors"
+          title="Zoom In"
         >
           <Plus className="w-3.5 h-3.5" />
         </button>
         <button
           onClick={() => mapRef.current?.zoomOut()}
-          className="w-7 h-7 flex items-center justify-center hover:bg-[#FBF2E1] rounded-sm text-[#6E6252] hover:text-[#2A211A] border-t border-[#F1E6CE]"
-          title="Zoom out"
+          className="p-1.5 hover:bg-slate-100 rounded text-slate-600 hover:text-slate-900 border-t border-slate-100 transition-colors"
+          title="Zoom Out"
         >
           <Minus className="w-3.5 h-3.5" />
         </button>
         <button
           onClick={() => mapRef.current?.resetNorthPitch()}
-          className="w-7 h-7 flex items-center justify-center hover:bg-[#FBF2E1] rounded-sm text-[#6E6252] hover:text-[#2A211A] border-t border-[#F1E6CE]"
-          title="Reset north"
+          className="p-1.5 hover:bg-slate-100 rounded text-slate-600 hover:text-slate-900 border-t border-slate-100 transition-colors"
+          title="Reset North"
         >
           <Compass className="w-3.5 h-3.5" />
         </button>
         <button
           onClick={() => mapRef.current?.flyTo({ center: DEFAULT_CENTER, zoom: DEFAULT_ZOOM })}
-          className="w-7 h-7 flex items-center justify-center hover:bg-[#FBF2E1] rounded-sm text-[#6E6252] hover:text-[#2A211A] border-t border-[#F1E6CE]"
+          className="p-1.5 hover:bg-slate-100 rounded text-slate-600 hover:text-slate-900 border-t border-slate-100 transition-colors"
           title="Recenter"
         >
           <Crosshair className="w-3.5 h-3.5" />
@@ -1065,35 +1039,30 @@ export const MapView: React.FC<MapViewProps> = ({
       </div>
 
       <div ref={mapContainerRef} className="w-full h-full" />
-      {!mapLoaded && (
-        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3" style={{background:'var(--ink-2)'}}>
-          <div className="w-7 h-7 rounded-full border-[3px] border-[var(--border)] border-t-[var(--brand)]" style={{animation:'spin .8s linear infinite'}}></div>
-          <div style={{fontSize:'12px', color:'var(--text-faint)'}}>Loading terrain map…</div>
-        </div>
-      )}
 
-      <div className="absolute bottom-2.5 left-2.5 z-20 bg-white border border-[#E8D9BC] rounded-sm px-3 py-2 flex items-center gap-3 text-[11px] font-medium" style={{backdropFilter:'blur(10px)', background:'rgba(255,251,244,.78)'}}>
+      {/* Modern GPS Navigation Legend */}
+      <div className="absolute bottom-4 left-3.5 z-20 bg-white/95 backdrop-blur-sm border border-slate-200 px-3.5 py-2.5 rounded-xl shadow-md text-xs text-slate-700 flex items-center gap-3.5">
         {!simulationActive ? (
-          <span className="flex items-center gap-1.5">
-            <span className="w-3 h-0.5" style={{background:'#10b981'}} aria-hidden />
-            <span className="text-[11px] font-bold" style={{color:'#065f46'}}>Active Navigation (Guwahati → Jorhat)</span>
-          </span>
+          <div className="flex items-center gap-1.5">
+            <span className="w-3.5 h-1.5 bg-emerald-500 rounded-full"></span>
+            <span className="text-[11px] font-bold text-emerald-700">Active Navigation (Guwahati ➔ Jorhat)</span>
+          </div>
         ) : (
           <>
-            <span className="flex items-center gap-1.5">
-              <span className="w-3 h-0.5" style={{background:'#ef4444'}} aria-hidden />
-              <span className="text-[11px] font-bold" style={{color:'#7f1d1d'}}>Blocked (NH-37 Kaziranga)</span>
-            </span>
-            <span className="flex items-center gap-1.5 pl-2.5" style={{borderLeft:'1px solid var(--border-soft)'}}>
-              <span className="w-3 h-0.5" style={{background:'#10b981'}} aria-hidden />
-              <span className="text-[11px] font-bold" style={{color:'#065f46'}}>Bypass (Golaghat)</span>
-            </span>
+            <div className="flex items-center gap-1.5">
+              <span className="w-3.5 h-1.5 bg-red-600 rounded-full"></span>
+              <span className="text-[11px] font-bold text-red-700">Blocked (NH-37 Kaziranga)</span>
+            </div>
+            <div className="flex items-center gap-1.5 pl-2.5 border-l border-slate-200">
+              <span className="w-3.5 h-1.5 bg-emerald-500 rounded-full"></span>
+              <span className="text-[11px] font-bold text-emerald-700">OSM Bypass (ALT-ROUTE-B via Golaghat)</span>
+            </div>
           </>
         )}
-        <span className="flex items-center gap-1.5 pl-2.5" style={{borderLeft:'1px solid var(--border-soft)'}}>
-          <span className="w-3 h-0.5" style={{background:'#64748b'}} aria-hidden />
-          <span className="text-[11px] font-bold" style={{color:'var(--text-faint)'}}>Other Roads</span>
-        </span>
+        <div className="flex items-center gap-1.5 pl-2.5 border-l border-slate-200">
+          <span className="w-3.5 h-1.5 bg-slate-500 rounded-full"></span>
+          <span className="text-[11px] font-bold text-slate-600">Other Roads (Slate Grey)</span>
+        </div>
       </div>
     </div>
   );
