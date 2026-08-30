@@ -186,7 +186,7 @@ h1,h2,h3,.display{ font-family:'Space Grotesk', sans-serif; }
 @media (max-width:1200px){ .dash-hero{ min-height:auto; } .dash-grid{ grid-template-columns:1fr; height:auto; } }
 .panel{ background:var(--surface);border:1px solid var(--border-soft);border-radius:var(--radius-lg);animation:fadeUp .5s var(--ease) both; }
 .panel-title{ font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--text-faint);padding:10px 13px 7px; }
-.layer-rail{ padding:6px 6px 14px; }
+.layer-rail{ padding:6px 6px 14px; height:100%; display:flex; flex-direction:column; }
 .layer-group{ padding:6px 10px 4px; }
 .layer-group-title{ font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--text-faint);margin:9px 4px 6px;font-weight:700; }
 .layer-chip{

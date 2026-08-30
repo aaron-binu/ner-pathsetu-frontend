@@ -299,10 +299,10 @@ export const App: React.FC = () => {
           </div>
         ) : activeTab === 'Map' ? (
           <div className="view">
-            <div className="dash-grid" style={{gridTemplateColumns:'224px 1fr'}}>
+            <div className="dash-grid" style={{gridTemplateColumns:'224px 1fr', minHeight:620}}>
               <LayerRail />
-              <div className="map-wrap" style={{height:'74vh', minHeight:560}}>
-                <MapView className="w-full h-full" />
+              <div className="map-wrap" style={{height:'85vh', minHeight:620}}>
+                <MapView className="w-full h-full" hideLayersButton />
               </div>
             </div>
           </div>
