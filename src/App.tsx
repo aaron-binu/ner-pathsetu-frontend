@@ -316,9 +316,31 @@ export const App: React.FC = () => {
           </div>
         ) : activeTab === 'Logistics' ? (
           <div className="view">
-            <div className="panel" style={{padding:'17px 19px'}}>
-              <div className="panel-title" style={{padding:'0 0 12px'}}>Fleet & Cargo Intelligence</div>
-              <FleetTable />
+            <div className="panel" style={{padding:'20px 22px', overflow:'hidden'}}>
+              <div className="logistics-head">
+                <div>
+                  <div className="logistics-title">Fleet & Cargo Intelligence</div>
+                  <div className="logistics-sub">Monitoring essential commodities (d) · V2V + GPS proven offline sync</div>
+                </div>
+                <div className="logistics-kpis">
+                  <LogisticsKPIs />
+                </div>
+              </div>
+              <div style={{marginBottom:14}}>
+                <div style={{fontSize:10, fontWeight:800, letterSpacing:.5, textTransform:'uppercase', color:'var(--text-faint)', marginBottom:8}}>Supply Health (by district stock)</div>
+                <div className="supply-strip">
+                  <SupplyMini name="Food" pct={82} days="24/30 days" color="var(--open)" />
+                  <SupplyMini name="Medicine" pct={46} days="9/21 days" color="var(--crit)" />
+                  <SupplyMini name="Construction" pct={71} days="32/45 days" color="var(--warn)" />
+                </div>
+              </div>
+              <div className="logi-wrap">
+                <FleetTable />
+              </div>
+              <div style={{marginTop:12, paddingTop:10, borderTop:'1px solid var(--border-soft)', display:'flex', justifyContent:'space-between', fontSize:11, color:'var(--text-faint)'}}>
+                <span>Tap Focus to locate on map · Reroute opens decision modal</span>
+                <span className="mono" id="fleet-count-footer">—</span>
+              </div>
             </div>
           </div>
         ) : activeTab === 'Incidents' ? (
@@ -364,28 +386,59 @@ export const App: React.FC = () => {
   );
 };
 
+const LogisticsKPIs: React.FC = () => {
+  const { vehicles, roadStatuses } = usePathSetuStore();
+  const atRisk = vehicles.filter(v=> roadStatuses[v.currentRouteId] === 'BLOCKED').length;
+  const crit = vehicles.filter(v=> v.priority==='CRITICAL').length;
+  return (
+    <>
+      <span><b>{vehicles.length}</b> vehicles</span>
+      <span style={{background: atRisk? 'var(--crit-dim)': 'var(--open-dim)', color: atRisk? 'var(--crit)':'var(--open)', borderColor: atRisk? 'rgba(201,79,73,.2)':'rgba(124,163,107,.2)'}}><b>{atRisk}</b> at risk</span>
+      <span><b>{crit}</b> critical</span>
+    </>
+  );
+};
+
+const SupplyMini: React.FC<{name:string; pct:number; days:string; color:string}> = ({name,pct,days,color}) => (
+  <div className="supply-mini">
+    <div className="sm-head"><span>{name}</span><span className="mono" style={{color}}>{pct}%</span></div>
+    <div className="sm-bar"><div className="sm-fill" style={{width:`${pct}%`, background:color}} /></div>
+    <div className="sm-foot">{days} · district stock</div>
+  </div>
+);
+
 const FleetTable: React.FC = () => {
   const { vehicles, roadStatuses, selectedVehicleId, setSelectedVehicle, openRouteDecision } = usePathSetuStore();
+  React.useEffect(()=>{ const el=document.getElementById('fleet-count-footer'); if(el) el.textContent=`${vehicles.length} units · ${vehicles.filter(v=>roadStatuses[v.currentRouteId]==='BLOCKED').length} blocked`},[vehicles, roadStatuses]);
   return (
     <table className="logi">
-      <thead><tr><th>Vehicle</th><th>Cargo</th><th>Priority</th><th>Route</th><th>Status</th><th>ETA</th><th></th></tr></thead>
+      <thead><tr><th>Vehicle</th><th>Cargo</th><th>Priority</th><th>Route</th><th>Status</th><th>ETA</th><th style={{textAlign:'right'}}>Actions</th></tr></thead>
       <tbody>
         {vehicles.map(v=>{
           const s = roadStatuses[v.currentRouteId] || 'OPEN';
           const cls = s==='BLOCKED'?'blocked':s==='RESTRICTED'?'restricted':'open';
           const sel = selectedVehicleId===v.id;
+          const isDelay = v.eta.includes('+');
+          const delayPart = isDelay ? v.eta.slice(v.eta.indexOf('(')) : '';
+          const etaMain = isDelay ? v.eta.slice(0, v.eta.indexOf('(')).trim() : v.eta;
           return (
-            <tr key={v.id} style={sel?{background:'var(--surface-2)'}:undefined}>
-              <td><b className="mono">{v.id}</b></td>
-              <td>{v.cargo}</td>
-              <td><span className={`priority-pill ${v.priority.toLowerCase()}`}>{v.priority}</span></td>
-              <td className="mono" style={{fontSize:'12px'}}>{v.currentRouteId}</td>
-              <td><span className={`status-pill ${cls}`} style={{padding:'3px 8px', fontSize:'10px'}}><span className="sdot"></span>{s}</span></td>
-              <td className="mono">{v.eta}</td>
+            <tr key={v.id} className={sel? 'is-selected':''}>
               <td>
-                <div style={{display:'flex', gap:6}}>
-                  <button className="btn" style={{padding:'6px 10px', fontSize:'11px'}} onClick={()=>setSelectedVehicle(v)}>Focus</button>
-                  <button className="btn" style={{padding:'6px 10px', fontSize:'11px'}} onClick={()=>openRouteDecision(v)}>Reroute</button>
+                <div className="mono" style={{fontWeight:700, fontSize:12.5}}>{v.id}</div>
+                <div style={{fontSize:11, color:'var(--text-faint)', marginTop:2}}>{v.driver}</div>
+              </td>
+              <td>
+                <div style={{fontWeight:600, fontSize:13}}>{v.cargo}</div>
+                <div className="mono" style={{fontSize:11, color:'var(--text-faint)', marginTop:2, whiteSpace:'nowrap'}}>{v.destination.split(',')[0]}</div>
+              </td>
+              <td style={{whiteSpace:'nowrap'}}><span className={`priority-pill ${v.priority.toLowerCase()}`} style={{padding:'4px 8px', fontSize:10}}>{v.priority}</span></td>
+              <td className="mono" style={{fontSize:'12px', whiteSpace:'nowrap'}}>{v.currentRouteId}<span style={{color:'var(--text-faint)', marginLeft:6}}>{v.speedKmh? `${v.speedKmh}km/h`:''}</span></td>
+              <td style={{whiteSpace:'nowrap'}}><span className={`status-pill ${cls}`} style={{padding:'4px 9px', fontSize:'10.5px'}}><span className="sdot"></span>{s}</span></td>
+              <td className="mono" style={{whiteSpace:'nowrap'}}>{etaMain}{delayPart && <span className="logi-eta-delay">{delayPart}</span>}</td>
+              <td>
+                <div style={{display:'flex', gap:8, justifyContent:'flex-end'}}>
+                  <button className="btn" style={{padding:'7px 12px', fontSize:'12px', minHeight:32, whiteSpace:'nowrap'}} onClick={()=>setSelectedVehicle(v)}>Focus</button>
+                  <button className="btn btn-primary" style={{padding:'7px 13px', fontSize:'12px', minHeight:32, whiteSpace:'nowrap'}} onClick={()=>openRouteDecision(v)}>Reroute</button>
                 </div>
               </td>
             </tr>
@@ -677,62 +730,70 @@ const AlertsView: React.FC = () => {
     return f && s;
   });
   const critCount = alerts.filter(a=>a.severity==='CRITICAL').length;
+  const highCount = alerts.length - critCount;
   return (
     <div className="panel" style={{overflow:'hidden'}}>
-      <div style={{padding:'18px 18px 14px', borderBottom:'1px solid var(--border-soft)', background:'var(--surface)'}}>
-        <div style={{display:'flex',justifyContent:'space-between',gap:12,flexWrap:'wrap',alignItems:'flex-start'}}>
+      <div className="list-head">
+        <div style={{display:'flex',justifyContent:'space-between',gap:14,flexWrap:'wrap',alignItems:'flex-start'}}>
           <div>
-            <div style={{fontFamily:'Space Grotesk',fontSize:18,fontWeight:700,lineHeight:1}}>Multilingual Alert Log</div>
-            <div style={{fontSize:12.5,color:'var(--text-dim)',marginTop:4}}>{alerts.length} broadcasts · {critCount} critical · Live broadcast gateway · TTS in 8 languages</div>
+            <div className="list-head-title">Multilingual Alert Log</div>
+            <div className="list-head-sub">{alerts.length} broadcasts · <span style={{color: critCount? 'var(--crit)':'var(--text-dim)', fontWeight:700}}>{critCount} critical</span> · {highCount} high · Live gateway · TTS 8 languages</div>
           </div>
-          <div style={{display:'flex',gap:8,alignItems:'center'}}>
-            <div style={{position:'relative'}}>
-              <input value={q} onChange={e=>setQ(e.target.value)} placeholder="Search corridor, vehicle…" style={{width:210,padding:'8px 32px 8px 10px',borderRadius:10,border:'1px solid var(--border)',background:'var(--surface)',fontSize:12.5,outline:'none'}} />
-              <span style={{position:'absolute',right:10,top:'50%',transform:'translateY(-50%)',fontSize:12, color:'var(--text-faint)'}}>⌕</span>
+          <div className="list-head-tools">
+            <div className="list-search">
+              <input value={q} onChange={e=>setQ(e.target.value)} placeholder="Search corridor, vehicle…" />
+              <span className="sico">⌕</span>
             </div>
-            <select value={selectedLanguage} onChange={e=> (setSelectedLanguage as any)(e.target.value)} style={{padding:'8px 10px',borderRadius:10,border:'1px solid var(--border)',background:'var(--surface-2)',fontSize:12, fontWeight:600}}>
-              <option value="en">EN</option><option value="as">AS (অসমীয়া)</option><option value="hi">HI (हिन्दी)</option><option value="mni">MNI (মৈতৈলোন্)</option><option value="lus">Mizo</option><option value="kha">Khasi</option><option value="brx">Bodo</option><option value="bn">BN (বাংলা)</option>
-            </select>
+            <div style={{position:'relative'}}>
+              <select value={selectedLanguage} onChange={e=> (setSelectedLanguage as any)(e.target.value)} className="lang-select">
+                <option value="en">EN</option><option value="as">AS (অসমীয়া)</option><option value="hi">HI (हिन्दी)</option><option value="mni">MNI (মৈতৈলোন্)</option><option value="lus">Mizo</option><option value="kha">Khasi</option><option value="brx">Bodo</option><option value="bn">BN (বাংলা)</option>
+              </select>
+              <span style={{position:'absolute', right:8, top:'50%', transform:'translateY(-50%)', fontSize:10, color:'var(--text-faint)', pointerEvents:'none'}}>▾</span>
+            </div>
           </div>
         </div>
-        <div className="filter-row" style={{marginTop:14,marginBottom:0}}>
+        <div className="filter-row" style={{marginTop:14}}>
           {(['all','critical','high'] as const).map(t=>(
             <button key={t} className={`filter-chip ${filter===t?'active':''}`} onClick={()=>setFilter(t)}>
-              {t==='all'?'All': t==='critical'?'Critical':'High'} {t==='all'?`· ${alerts.length}`: t==='critical'?`· ${critCount}`:`· ${alerts.length-critCount}`}
+              {t==='all'?'All': t==='critical'?'Critical':'High'} {t==='all'?`· ${alerts.length}`: t==='critical'?`· ${critCount}`:`· ${highCount}`}
             </button>
           ))}
+          <span className="mono" style={{marginLeft:'auto', fontSize:11, color:'var(--text-faint)', alignSelf:'center'}}>{filtered.length} shown</span>
         </div>
       </div>
-      <div className="card-list" style={{padding:'12px 12px 16px', display:'flex', flexDirection:'column', gap:10, background:'var(--ink)'}}>
+      <div className="card-list" style={{padding:'14px 14px 16px', display:'flex', flexDirection:'column', gap:12}}>
         {filtered.map(a=>(
-          <div key={a.id} className="inc-card" style={{background:'var(--surface)', borderLeft:`4px solid ${a.severity==='CRITICAL'?'var(--crit)':'var(--warn)'}`, borderRadius:14, paddingLeft:22}}>
-            <div className={`inc-ico ${a.severity==='CRITICAL'?'crit':'warn'}`} style={{marginTop:2, flexShrink:0}}>🔊</div>
-            <div className="inc-body" style={{minWidth:0, flex:1}}>
+          <div key={a.id} className="inc-card" style={{borderLeft:`4px solid ${a.severity==='CRITICAL'?'var(--crit)':'var(--warn)'}`}}>
+            <div className={`inc-ico ${a.severity==='CRITICAL'?'crit':'warn'}`}>🔊</div>
+            <div className="inc-body">
               <div style={{display:'flex', justifyContent:'space-between', gap:12, alignItems:'flex-start'}}>
                 <div style={{flex:1, minWidth:0}}>
-                  <div style={{fontWeight:700, fontSize:14, lineHeight:1.3, color:'var(--text)'}}>{a.title}</div>
-                  <div style={{fontSize:12, color:'var(--text-dim)', marginTop:2}}>{a.corridor} · {a.recipient}</div>
-                  <div style={{fontSize:12, color:'var(--text)', marginTop:6, lineHeight:1.5, background:'var(--surface-2)', border:'1px solid var(--border-soft)', borderRadius:10, padding:'8px 10px'}}>{a.message}</div>
-                  <div className="mono" style={{fontSize:11, color:'var(--text-faint)', marginTop:6}}>{a.lang} · {a.vehicles.join(', ')} · {a.timestamp}</div>
+                  <div className="inc-title">{a.title}</div>
+                  <div style={{fontSize:12, color:'var(--text-dim)', marginTop:3}}>{a.corridor} · <span style={{color:'var(--text)', fontWeight:600}}>{a.recipient}</span></div>
                 </div>
-                <div className="mono" style={{whiteSpace:'nowrap', fontSize:11, fontWeight:600, color:'var(--text-faint)', background:'var(--surface-2)', padding:'5px 9px', borderRadius:9, border:'1px solid var(--border-soft)', flexShrink:0}}>{a.timestamp}</div>
+                <div className="mono" style={{whiteSpace:'nowrap', fontSize:11, fontWeight:700, color:'var(--text-faint)', background:'var(--surface-2)', padding:'6px 10px', borderRadius:9, border:'1px solid var(--border-soft)', flexShrink:0}}>{a.timestamp}</div>
               </div>
-              <div style={{marginTop:10, display:'flex', gap:7, flexWrap:'wrap', alignItems:'center'}}>
-                <span className="tag" style={{background: a.severity==='CRITICAL'?'var(--crit-dim)':'var(--warn-dim)', color: a.severity==='CRITICAL'?'var(--crit)':'var(--warn)', borderColor:'transparent', fontWeight:800, padding:'3px 8px'}}>{a.severity}</span>
-                <span className="tag" style={{background:'var(--surface-2)', border:'1px solid var(--border-soft)'}}>{a.corridor.split('(')[0].trim()}</span>
-                <span style={{marginLeft:'auto', display:'flex', gap:6}}>
-                  <button className="btn" style={{padding:'6px 10px', fontSize:11}} onClick={()=> playMultilingualAlert(a.lang)}>🔊 Play {a.lang}</button>
-                  <button className="btn btn-primary" style={{padding:'6px 10px', fontSize:11}} onClick={()=>{ playMultilingualAlert(selectedLanguage); }}>🔊 Channel Audio</button>
+              <div className="alert-msg" style={{marginTop:10}}>{a.message}</div>
+              <div className="mono" style={{fontSize:11, color:'var(--text-faint)', marginTop:7, display:'flex', gap:8, flexWrap:'wrap'}}>
+                <span style={{background:'var(--surface-2)', border:'1px solid var(--border-soft)', padding:'2px 7px', borderRadius:7, fontWeight:700}}>{a.lang.toUpperCase()}</span>
+                <span>{a.vehicles.join(' · ')}</span>
+              </div>
+              <div style={{marginTop:11, display:'flex', gap:8, flexWrap:'wrap', alignItems:'center'}}>
+                <span className="tag" style={{background: a.severity==='CRITICAL'?'var(--crit-dim)':'var(--warn-dim)', color: a.severity==='CRITICAL'?'var(--crit)':'var(--warn)', borderColor:'transparent', fontWeight:800}}>{a.severity}</span>
+                <span className="tag">{a.corridor.split('(')[0].trim()}</span>
+                <span className="alert-actions" style={{marginLeft:'auto'}}>
+                  <button className="btn" onClick={()=> playMultilingualAlert(a.lang)}>🔊 Play {a.lang.toUpperCase()}</button>
+                  <button className="btn btn-primary" onClick={()=>{ playMultilingualAlert(selectedLanguage); }}>🔊 Channel Audio</button>
                 </span>
               </div>
             </div>
           </div>
         ))}
-        {filtered.length===0 && <div style={{textAlign:'center',padding:30,color:'var(--text-faint)',background:'var(--surface)',border:'1px solid var(--border-soft)',borderRadius:14}}>No alerts match filter.</div>}
+        {filtered.length===0 && <div style={{textAlign:'center',padding:'36px 20px',color:'var(--text-faint)',fontSize:13,background:'var(--surface)',border:'1px solid var(--border-soft)',borderRadius:14}}>No alerts match filter. Try clearing search or switching severity.</div>}
       </div>
-      <div style={{padding:'10px 14px', borderTop:'1px solid var(--border-soft)', background:'var(--surface-2)', display:'flex', justifyContent:'space-between', fontSize:11.5, color:'var(--text-faint)'}}>
-        <span>Broadcasts are sent via gateway in selected language · TTS available offline</span>
-        <span className="mono">{filtered.length}/{alerts.length}</span>
+      <div className="list-footer">
+        <span>Broadcasts via gateway in selected language · TTS works offline</span>
+        <span className="mono">{filtered.length} / {alerts.length}</span>
       </div>
     </div>
   );

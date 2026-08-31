@@ -454,29 +454,20 @@ export const MapView: React.FC<MapViewProps> = ({
           if (!e.features || !e.features[0]) return;
           const props = e.features[0].properties as any;
           const status = (props.status || 'OPEN').toUpperCase();
-          const statusColor = status === 'BLOCKED' ? '#ef4444' : status === 'REROUTED' || status === 'NORMAL_TRIP' ? '#10b981' : status === 'RECOMMENDED' ? '#0284c7' : '#2563eb';
+          const displayStatus = status === 'NORMAL_TRIP' ? 'ACTIVE ROUTE' : status === 'BACKGROUND_DIM' ? 'OPEN' : status;
+          const pillCls = status === 'BLOCKED' ? 'blocked' : status === 'RESTRICTED' ? 'restricted' : 'open';
 
-          new maplibregl.Popup({ offset: 10 })
+          new maplibregl.Popup({ offset: 10, closeButton: true, className: 'warm' })
             .setLngLat(e.lngLat)
             .setHTML(`
-              <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 4px 6px; min-width: 210px;">
-                <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px;">
-                  <span style="font-size: 10px; font-weight: 800; color: ${statusColor}; text-transform: uppercase; background: ${statusColor}18; padding: 2px 6px; border-radius: 4px; border: 1px solid ${statusColor}33;">
-                    ${escapeHtml(status === 'NORMAL_TRIP' ? 'ACTIVE ROUTE' : status === 'BACKGROUND_DIM' ? 'OPEN' : status)}
-                  </span>
-                  <span style="font-size: 9px; font-weight: 600; color: #64748b;">
-                    ${escapeHtml(props.type || 'Corridor')}
-                  </span>
+              <div class="warm-popup">
+                <div class="wp-head">
+                  <span class="status-pill ${pillCls}"><span class="sdot"></span>${escapeHtml(displayStatus)}</span>
+                  <span class="mono" style="font-size:10px; color:var(--text-faint); font-weight:600;">${escapeHtml(props.type || 'Corridor')}</span>
                 </div>
-                <div style="font-size: 12px; font-weight: 700; color: #0f172a; line-height: 1.3; margin-bottom: 4px;">
-                  ${escapeHtml(props.name)}
-                </div>
-                <div style="font-size: 11px; color: #475569; margin-bottom: 3px;">
-                  <b>Length:</b> ${escapeHtml(props.lengthKm)} km | <b>Criticality:</b> ${escapeHtml(props.criticality || 'HIGH')}
-                </div>
-                <div style="font-size: 10px; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 4px; margin-top: 4px;">
-                  <b>Destination:</b> Jorhat Central Hospital, Upper Assam
-                </div>
+                <div class="wp-title">${escapeHtml(props.name)}</div>
+                <div class="wp-meta" style="margin-top:6px;"><b>Length:</b> ${escapeHtml(props.lengthKm)} km · <b>Criticality:</b> ${escapeHtml(props.criticality || 'HIGH')}</div>
+                <div class="wp-divider"><span><b>Destination:</b> Jorhat Central Hospital</span></div>
               </div>
             `)
             .addTo(map);
@@ -512,33 +503,24 @@ export const MapView: React.FC<MapViewProps> = ({
           const props = e.features[0].properties as any;
           const score = props.riskScore || 72;
           const level = (props.riskLevel || 'HIGH').toUpperCase();
-          const levelColor = level === 'CRITICAL' ? '#dc2626' : level === 'HIGH' ? '#ea580c' : '#d97706';
+          const lvl = level === 'CRITICAL' ? 'critical' : level === 'HIGH' ? 'high' : 'normal';
+          const scoreColor = level === 'CRITICAL' ? 'var(--crit)' : level === 'HIGH' ? 'var(--warn)' : 'var(--text-dim)';
 
-          new maplibregl.Popup({ offset: 14, closeButton: true })
+          new maplibregl.Popup({ offset: 14, closeButton: true, className: 'warm' })
             .setLngLat(e.lngLat)
             .setHTML(`
-              <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 6px 8px; min-width: 240px;">
-                <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px;">
-                  <span style="font-size: 9.5px; font-weight: 800; color: ${levelColor}${levelColor}; text-transform: uppercase; background: ${levelColor}${levelColor}18; padding: 2px 7px; border-radius: 4px; border: 1px solid ${levelColor}${levelColor}44; letter-spacing: 0.3px;">
-                    ${escapeHtml(level)} RISK ZONE
-                  </span>
-                  <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 800; color: ${levelColor}${levelColor};">
-                    ${escapeHtml(score)}<span style="font-size: 10px; font-weight: 600; color: #64748b;"> / 100</span>
-                  </span>
+              <div class="warm-popup">
+                <div class="wp-head">
+                  <span class="priority-pill ${lvl}">${escapeHtml(level)} RISK</span>
+                  <span class="mono" style="font-size:13px; font-weight:800; color:${scoreColor};">${escapeHtml(score)}<span style="font-size:10px; font-weight:600; color:var(--text-faint);"> / 100</span></span>
                 </div>
-                <div style="font-size: 13px; font-weight: 700; color: #0f172a; line-height: 1.3; margin-bottom: 5px;">
-                  ${escapeHtml(props.name)}
+                <div class="wp-title">${escapeHtml(props.name)}</div>
+                <div class="wp-why">⚠️ <b>Hazard:</b> ${escapeHtml(props.hazardType || 'Active Slope Failure / Mudflow')}</div>
+                <div style="display:flex; justify-content:space-between; gap:12px; font-size:11px; color:var(--text-dim); margin-top:8px;">
+                  <span>Rainfall: <b style="color:var(--text);">${escapeHtml(props.rainfall || '96 mm/24h')}</b></span>
+                  <span>Terrain: <b style="color:var(--text);">${escapeHtml(props.terrainRisk || '75%')}</b></span>
                 </div>
-                <div style="font-size: 11.5px; color: #1e293b; margin-bottom: 6px; line-height: 1.4; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 6px 8px;">
-                  <b>⚠️ Hazard:</b> ${escapeHtml(props.hazardType || 'Active Slope Failure / Mudflow')}
-                </div>
-                <div style="display: flex; justify-content: space-between; font-size: 11px; color: #475569; margin-bottom: 4px;">
-                  <span>Rainfall: <b>${escapeHtml(props.rainfall || '96 mm/24h')}</b></span>
-                  <span>Terrain Risk: <b>${escapeHtml(props.terrainRisk || '75%')}</b></span>
-                </div>
-                <div style="font-size: 9.5px; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 4px; margin-top: 5px;">
-                  🛰️ <b>GIS Sentinel:</b> ${escapeHtml(props.source || 'NASA LHASA / IMD Radar Live')}
-                </div>
+                <div class="wp-divider">🛰️ <span><b>GIS Sentinel:</b> ${escapeHtml(props.source || 'NASA LHASA / IMD Radar Live')}</span></div>
               </div>
             `)
             .addTo(map);
@@ -704,13 +686,13 @@ export const MapView: React.FC<MapViewProps> = ({
         </div>
       `;
       originEl.addEventListener('click', () => {
-        new maplibregl.Popup({ offset: 10 })
+        new maplibregl.Popup({ offset: 12, closeButton: true, className: 'warm' })
           .setLngLat(ORIGIN_COORDS)
           .setHTML(`
-            <div style="font-family: -apple-system, BlinkMacSystemFont, sans-serif; padding: 4px;">
-              <b style="color: #2563eb; font-size: 11px;">🚩 Convoys Dispatch Terminal</b>
-              <div style="font-size: 12px; font-weight: bold; margin-top: 2px;">Guwahati Central Logistics Hub</div>
-              <div style="font-size: 10px; color: #64748b; margin-top: 2px;">Origin for VEH-104 (Emergency Medicine Convoy)</div>
+            <div class="warm-popup" style="min-width:220px;">
+              <div style="font-size:10px; font-weight:800; letter-spacing:.5px; text-transform:uppercase; color:var(--route);">🚩 Dispatch Terminal</div>
+              <div class="wp-title" style="margin-top:4px;">Guwahati Central Logistics Hub</div>
+              <div style="font-size:11px; color:var(--text-dim); margin-top:4px;">Origin for <span class="mono" style="font-weight:700; color:var(--text);">VEH-104</span> · Emergency Medicine</div>
             </div>
           `)
           .addTo(map);
@@ -733,13 +715,13 @@ export const MapView: React.FC<MapViewProps> = ({
         </div>
       `;
       destEl.addEventListener('click', () => {
-        new maplibregl.Popup({ offset: 10 })
+        new maplibregl.Popup({ offset: 12, closeButton: true, className: 'warm' })
           .setLngLat(DESTINATION_COORDS)
           .setHTML(`
-            <div style="font-family: -apple-system, BlinkMacSystemFont, sans-serif; padding: 4px;">
-              <b style="color: #10b981; font-size: 11px;">📍 Final Delivery Target</b>
-              <div style="font-size: 12px; font-weight: bold; margin-top: 2px;">Jorhat Central Hospital, Upper Assam</div>
-              <div style="font-size: 10px; color: #64748b; margin-top: 2px;">Target destination for Emergency Medicine delivery via NH-37 / Golaghat corridor.</div>
+            <div class="warm-popup" style="min-width:240px;">
+              <div style="font-size:10px; font-weight:800; letter-spacing:.5px; text-transform:uppercase; color:var(--open);">📍 Final Delivery Target</div>
+              <div class="wp-title" style="margin-top:4px;">Jorhat Central Hospital, Upper Assam</div>
+              <div style="font-size:11px; color:var(--text-dim); margin-top:4px; line-height:1.5;">Target for Emergency Medicine via <span style="font-weight:700; color:var(--text);">NH-37 / Golaghat</span> bypass corridor.</div>
             </div>
           `)
           .addTo(map);
@@ -767,25 +749,19 @@ export const MapView: React.FC<MapViewProps> = ({
         `;
 
         el.addEventListener('click', () => {
-          new maplibregl.Popup({ offset: 12 })
+          const bStatus = (props.status || 'OPEN').toUpperCase();
+          const sCls = bStatus === 'BLOCKED' ? 'blocked' : bStatus === 'RESTRICTED' ? 'restricted' : 'open';
+          new maplibregl.Popup({ offset: 12, closeButton: true, className: 'warm' })
             .setLngLat(feat.geometry.coordinates)
             .setHTML(`
-              <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 4px 6px; min-width: 200px;">
-                <div style="font-size: 10px; font-weight: 800; color: #1d4ed8; text-transform: uppercase; background: #dbeafe; padding: 2px 6px; border-radius: 4px; display: inline-block; margin-bottom: 4px;">
-                  Strategic Bridge
+              <div class="warm-popup" style="min-width:210px;">
+                <div class="wp-head">
+                  <span style="font-size:10px; font-weight:800; letter-spacing:.4px; text-transform:uppercase; color:var(--route); background:var(--route-dim); padding:3px 7px; border-radius:7px; border:1px solid rgba(108,147,168,.2);">🌉 Strategic Bridge</span>
+                  <span class="status-pill ${sCls}" style="padding:3px 7px; font-size:10px;"><span class="sdot"></span>${escapeHtml(bStatus)}</span>
                 </div>
-                <div style="font-size: 12px; font-weight: 700; color: #0f172a; line-height: 1.3; margin-bottom: 4px;">
-                  ${escapeHtml(props.name)}
-                </div>
-                <div style="font-size: 11px; color: #475569; margin-bottom: 3px;">
-                  <b>River:</b> ${escapeHtml(props.river)} | <b>Type:</b> ${escapeHtml(props.bridgeType)}
-                </div>
-                <div style="font-size: 11px; color: #475569; margin-bottom: 3px;">
-                  <b>Status:</b> ${escapeHtml(props.status || 'OPEN')}
-                </div>
-                <div style="font-size: 10px; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 4px; margin-top: 4px;">
-                  <b>Source:</b> ${escapeHtml(props.source)}
-                </div>
+                <div class="wp-title">${escapeHtml(props.name)}</div>
+                <div class="wp-meta" style="margin-top:6px;"><b>River:</b> ${escapeHtml(props.river)} · <b>Type:</b> ${escapeHtml(props.bridgeType)}</div>
+                <div class="wp-divider"><span><b>Source:</b> ${escapeHtml(props.source)}</span></div>
               </div>
             `)
             .addTo(map);
@@ -832,29 +808,24 @@ export const MapView: React.FC<MapViewProps> = ({
         el.addEventListener('click', (e) => {
           e.stopPropagation();
           setSelectedIncident(feat);
+          const sCls = isBlocked ? 'blocked' : feat.roadStatus === 'RESTRICTED' ? 'restricted' : 'open';
+          const pCls = feat.severity === 'CRITICAL' ? 'critical' : feat.severity === 'HIGH' ? 'high' : 'normal';
 
-          new maplibregl.Popup({ offset: 14 })
+          new maplibregl.Popup({ offset: 14, closeButton: true, className: 'warm' })
             .setLngLat(feat.coordinates)
             .setHTML(`
-              <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 4px 6px; min-width: 220px;">
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
-                  <span style="font-size: 10px; font-weight: 800; color: ${color}; text-transform: uppercase; background: ${color}18; padding: 2px 6px; border-radius: 4px;">
-                    ${escapeHtml(feat.roadStatus)}
-                  </span>
-                  <span style="font-size: 10px; color: #64748b; font-weight: 600;">
-                    ${escapeHtml(feat.timeLogged)}
-                  </span>
+              <div class="warm-popup" style="min-width:230px;">
+                <div class="wp-head">
+                  <span class="status-pill ${sCls}"><span class="sdot"></span>${escapeHtml(feat.roadStatus)}</span>
+                  <span class="mono" style="font-size:10.5px; color:var(--text-faint); font-weight:600;">${escapeHtml(feat.timeLogged)}</span>
                 </div>
-                <div style="font-size: 12px; font-weight: 700; color: #0f172a; line-height: 1.3; margin-bottom: 3px;">
-                  ${escapeHtml(feat.type)}: ${escapeHtml(feat.roadName)}
+                <div class="wp-title">${escapeHtml(feat.type)} · ${escapeHtml(feat.roadName)}</div>
+                <div style="display:flex; gap:6px; margin-top:6px; flex-wrap:wrap; align-items:center;">
+                  <span class="priority-pill ${pCls}" style="padding:3px 7px; font-size:10px;">${escapeHtml(feat.severity)}</span>
+                  <span style="font-size:11px; color:var(--text-dim);">by <b style="color:var(--text);">${escapeHtml(feat.reportedBy)}</b></span>
                 </div>
-                <div style="font-size: 11px; color: #475569; margin-bottom: 3px;">
-                  <b>Severity:</b> ${escapeHtml(feat.severity)} | <b>Reported by:</b> ${escapeHtml(feat.reportedBy)}
-                </div>
-                ${feat.notes ? `<div style="font-size: 10px; color: #334155; margin-bottom: 3px;">${escapeHtml(feat.notes)}</div>` : ''}
-                <div style="font-size: 10px; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 4px; margin-top: 4px;">
-                  <b>Source:</b> ${escapeHtml(feat.source || 'Field Sentinel Report')}
-                </div>
+                ${feat.notes ? `<div class="wp-why">${escapeHtml(feat.notes)}</div>` : ''}
+                <div class="wp-divider"><span><b>Source:</b> ${escapeHtml(feat.source || 'Field Sentinel')}</span><span class="mono" style="font-size:10px;">${escapeHtml(feat.roadSegmentId || '')}</span></div>
               </div>
             `)
             .addTo(map);
@@ -885,22 +856,18 @@ export const MapView: React.FC<MapViewProps> = ({
         `;
 
         el.addEventListener('click', () => {
-          new maplibregl.Popup({ offset: 12 })
+          const wStatus = (props.status || 'OPERATIONAL').toUpperCase();
+          const wCls = wStatus === 'OPERATIONAL' || wStatus === 'OPEN' ? 'open' : wStatus === 'RESTRICTED' ? 'restricted' : 'blocked';
+          new maplibregl.Popup({ offset: 12, closeButton: true, className: 'warm' })
             .setLngLat(feat.geometry.coordinates)
             .setHTML(`
-              <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 4px 6px; min-width: 200px;">
-                <div style="font-size: 10px; font-weight: 800; color: #0284c7; text-transform: uppercase; background: #e0f2fe; padding: 2px 6px; border-radius: 4px; display: inline-block; margin-bottom: 4px;">
-                  IWT Terminal
+              <div class="warm-popup" style="min-width:210px;">
+                <div class="wp-head">
+                  <span style="font-size:10px; font-weight:800; letter-spacing:.4px; text-transform:uppercase; color:var(--route); background:var(--route-dim); padding:3px 7px; border-radius:7px; border:1px solid rgba(108,147,168,.2);">⚓ IWT Terminal</span>
+                  <span class="status-pill ${wCls}" style="padding:3px 7px; font-size:10px;"><span class="sdot"></span>${escapeHtml(wStatus)}</span>
                 </div>
-                <div style="font-size: 12px; font-weight: 700; color: #0f172a; line-height: 1.3; margin-bottom: 4px;">
-                  ${escapeHtml(props.name)}
-                </div>
-                <div style="font-size: 11px; color: #475569; margin-bottom: 3px;">
-                  <b>Status:</b> ${escapeHtml(props.status || 'OPERATIONAL')}
-                </div>
-                <div style="font-size: 10px; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 4px; margin-top: 4px;">
-                  <b>Source:</b> ${escapeHtml(props.source)}
-                </div>
+                <div class="wp-title">${escapeHtml(props.name)}</div>
+                <div class="wp-divider"><span><b>Source:</b> ${escapeHtml(props.source)}</span></div>
               </div>
             `)
             .addTo(map);
@@ -977,30 +944,22 @@ export const MapView: React.FC<MapViewProps> = ({
           e.stopPropagation();
           setSelectedVehicle(veh);
 
-          new maplibregl.Popup({ offset: 14 })
+          const vPill = isAtRisk ? 'critical' : isRerouted ? 'normal' : isCritical ? 'critical' : isHigh ? 'high' : 'normal';
+          const vLabel = isAtRisk ? 'ROUTE AT RISK' : isRerouted ? 'REROUTED' : veh.priority;
+          new maplibregl.Popup({ offset: 14, closeButton: true, className: 'warm' })
             .setLngLat(veh.coordinates)
             .setHTML(`
-              <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 4px 6px; min-width: 220px;">
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
-                  <span style="font-size: 10px; font-weight: 800; color: ${priorityColor}; text-transform: uppercase; background: ${priorityColor}18; padding: 2px 6px; border-radius: 4px;">
-                    ${escapeHtml(isAtRisk ? 'ROUTE AT RISK' : isRerouted ? 'REROUTED' : veh.priority)}
-                  </span>
-                  <span style="font-size: 10px; font-weight: 800; color: #2563eb; background: #eff6ff; padding: 2px 6px; border-radius: 4px;">
-                    ETA: ${escapeHtml(veh.eta)}
-                  </span>
+              <div class="warm-popup" style="min-width:240px;">
+                <div class="wp-head">
+                  <span class="priority-pill ${vPill}" style="padding:3px 7px; font-size:10px;">${escapeHtml(vLabel)}</span>
+                  <span class="mono" style="font-size:10.5px; font-weight:700; color:var(--text); background:var(--surface-2); border:1px solid var(--border-soft); padding:3px 7px; border-radius:7px;">ETA ${escapeHtml(veh.eta)}</span>
                 </div>
-                <div style="font-size: 13px; font-weight: 800; color: #0f172a; margin-bottom: 2px;">
-                  ${escapeHtml(veh.id)} — ${escapeHtml(veh.cargo)}
-                </div>
-                <div style="font-size: 11px; color: #475569; margin-bottom: 3px;">
-                  <b>Driver:</b> ${escapeHtml(veh.driver)} | <b>Route:</b> ${escapeHtml(veh.currentRouteId)}
-                </div>
-                <div style="font-size: 11px; color: #475569; margin-bottom: 4px;">
-                  <b>Destination:</b> ${escapeHtml(veh.destination)}
-                </div>
-                <div style="display: flex; align-items: center; justify-content: space-between; font-size: 10px; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 4px; margin-top: 4px;">
-                  <span>GPS: <b style="color: #2563eb;">PROTOTYPE GPS</b></span>
-                  <span style="color: #64748b;">${escapeHtml(veh.speedKmh || 48)} km/h • Bearing: ${bearing}°</span>
+                <div class="wp-title">${escapeHtml(veh.id)} · ${escapeHtml(veh.cargo)}</div>
+                <div class="wp-meta" style="margin-top:5px;"><b>Driver:</b> ${escapeHtml(veh.driver)} · <span class="mono" style="font-size:11px; color:var(--text-faint);">${escapeHtml(veh.currentRouteId)}</span></div>
+                <div style="font-size:11px; color:var(--text-dim); margin-top:4px; line-height:1.4;"><b>To:</b> ${escapeHtml(veh.destination)}</div>
+                <div class="wp-divider">
+                  <span class="mono" style="font-size:10px; color:var(--text-faint);"><span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:${isAtRisk?'var(--crit)':'var(--open)'}; vertical-align:middle; margin-right:4px;"></span>${escapeHtml(veh.gpsStatus || 'SIMULATED')} · ${escapeHtml(veh.speedKmh || 48)} km/h · ${bearing}°</span>
+                  <span class="mono" style="font-size:10px; color:var(--text-faint);">${escapeHtml(veh.lastUpdateSec != null ? veh.lastUpdateSec + 's ago' : '')}</span>
                 </div>
               </div>
             `)
