@@ -19,6 +19,16 @@ import waterwaysGeoJSON from '../../data/waterways.geojson';
 import { getGolaghatBypassCoordinates } from '../../data/golaghatBypass';
 import { IntelligenceDock } from '../layout/IntelligenceDock';
 
+const escapeHtml = (str: unknown): string => {
+  const s = String(str ?? '');
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+};
+
 maplibregl.setWorkerUrl(maplibreWorkerUrl);
 
 const MAP_STYLE: maplibregl.StyleSpecification = {
@@ -452,17 +462,17 @@ export const MapView: React.FC<MapViewProps> = ({
               <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 4px 6px; min-width: 210px;">
                 <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px;">
                   <span style="font-size: 10px; font-weight: 800; color: ${statusColor}; text-transform: uppercase; background: ${statusColor}18; padding: 2px 6px; border-radius: 4px; border: 1px solid ${statusColor}33;">
-                    ${status === 'NORMAL_TRIP' ? 'ACTIVE ROUTE' : status === 'BACKGROUND_DIM' ? 'OPEN' : status}
+                    ${escapeHtml(status === 'NORMAL_TRIP' ? 'ACTIVE ROUTE' : status === 'BACKGROUND_DIM' ? 'OPEN' : status)}
                   </span>
                   <span style="font-size: 9px; font-weight: 600; color: #64748b;">
-                    ${props.type || 'Corridor'}
+                    ${escapeHtml(props.type || 'Corridor')}
                   </span>
                 </div>
                 <div style="font-size: 12px; font-weight: 700; color: #0f172a; line-height: 1.3; margin-bottom: 4px;">
-                  ${props.name}
+                  ${escapeHtml(props.name)}
                 </div>
                 <div style="font-size: 11px; color: #475569; margin-bottom: 3px;">
-                  <b>Length:</b> ${props.lengthKm} km | <b>Criticality:</b> ${props.criticality || 'HIGH'}
+                  <b>Length:</b> ${escapeHtml(props.lengthKm)} km | <b>Criticality:</b> ${escapeHtml(props.criticality || 'HIGH')}
                 </div>
                 <div style="font-size: 10px; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 4px; margin-top: 4px;">
                   <b>Destination:</b> Jorhat Central Hospital, Upper Assam
@@ -509,25 +519,25 @@ export const MapView: React.FC<MapViewProps> = ({
             .setHTML(`
               <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 6px 8px; min-width: 240px;">
                 <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px;">
-                  <span style="font-size: 9.5px; font-weight: 800; color: ${levelColor}; text-transform: uppercase; background: ${levelColor}18; padding: 2px 7px; border-radius: 4px; border: 1px solid ${levelColor}44; letter-spacing: 0.3px;">
-                    ${level} RISK ZONE
+                  <span style="font-size: 9.5px; font-weight: 800; color: ${levelColor}${levelColor}; text-transform: uppercase; background: ${levelColor}${levelColor}18; padding: 2px 7px; border-radius: 4px; border: 1px solid ${levelColor}${levelColor}44; letter-spacing: 0.3px;">
+                    ${escapeHtml(level)} RISK ZONE
                   </span>
-                  <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 800; color: ${levelColor};">
-                    ${score}<span style="font-size: 10px; font-weight: 600; color: #64748b;"> / 100</span>
+                  <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 800; color: ${levelColor}${levelColor};">
+                    ${escapeHtml(score)}<span style="font-size: 10px; font-weight: 600; color: #64748b;"> / 100</span>
                   </span>
                 </div>
                 <div style="font-size: 13px; font-weight: 700; color: #0f172a; line-height: 1.3; margin-bottom: 5px;">
-                  ${props.name}
+                  ${escapeHtml(props.name)}
                 </div>
                 <div style="font-size: 11.5px; color: #1e293b; margin-bottom: 6px; line-height: 1.4; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 6px 8px;">
-                  <b>⚠️ Hazard:</b> ${props.hazardType || 'Active Slope Failure / Mudflow'}
+                  <b>⚠️ Hazard:</b> ${escapeHtml(props.hazardType || 'Active Slope Failure / Mudflow')}
                 </div>
                 <div style="display: flex; justify-content: space-between; font-size: 11px; color: #475569; margin-bottom: 4px;">
-                  <span>Rainfall: <b>${props.rainfall || '96 mm/24h'}</b></span>
-                  <span>Terrain Risk: <b>${props.terrainRisk || '75%'}</b></span>
+                  <span>Rainfall: <b>${escapeHtml(props.rainfall || '96 mm/24h')}</b></span>
+                  <span>Terrain Risk: <b>${escapeHtml(props.terrainRisk || '75%')}</b></span>
                 </div>
                 <div style="font-size: 9.5px; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 4px; margin-top: 5px;">
-                  🛰️ <b>GIS Sentinel:</b> ${props.source || 'NASA LHASA / IMD Radar Live'}
+                  🛰️ <b>GIS Sentinel:</b> ${escapeHtml(props.source || 'NASA LHASA / IMD Radar Live')}
                 </div>
               </div>
             `)
@@ -765,16 +775,16 @@ export const MapView: React.FC<MapViewProps> = ({
                   Strategic Bridge
                 </div>
                 <div style="font-size: 12px; font-weight: 700; color: #0f172a; line-height: 1.3; margin-bottom: 4px;">
-                  ${props.name}
+                  ${escapeHtml(props.name)}
                 </div>
                 <div style="font-size: 11px; color: #475569; margin-bottom: 3px;">
-                  <b>River:</b> ${props.river} | <b>Type:</b> ${props.bridgeType}
+                  <b>River:</b> ${escapeHtml(props.river)} | <b>Type:</b> ${escapeHtml(props.bridgeType)}
                 </div>
                 <div style="font-size: 11px; color: #475569; margin-bottom: 3px;">
-                  <b>Status:</b> ${props.status || 'OPEN'}
+                  <b>Status:</b> ${escapeHtml(props.status || 'OPEN')}
                 </div>
                 <div style="font-size: 10px; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 4px; margin-top: 4px;">
-                  <b>Source:</b> ${props.source}
+                  <b>Source:</b> ${escapeHtml(props.source)}
                 </div>
               </div>
             `)
@@ -811,7 +821,7 @@ export const MapView: React.FC<MapViewProps> = ({
                 </svg>
               </div>
               <span style="font-size: 10.5px; font-weight: 800; color: #0f172a; white-space: nowrap; letter-spacing: -0.2px;">
-                ${feat.type.toUpperCase()}: ${feat.roadStatus}
+                ${escapeHtml(feat.type.toUpperCase())}: ${escapeHtml(feat.roadStatus)}
               </span>
             </div>
             <div style="width: 2px; height: 6px; background: ${color};"></div>
@@ -829,21 +839,21 @@ export const MapView: React.FC<MapViewProps> = ({
               <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 4px 6px; min-width: 220px;">
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
                   <span style="font-size: 10px; font-weight: 800; color: ${color}; text-transform: uppercase; background: ${color}18; padding: 2px 6px; border-radius: 4px;">
-                    ${feat.roadStatus}
+                    ${escapeHtml(feat.roadStatus)}
                   </span>
                   <span style="font-size: 10px; color: #64748b; font-weight: 600;">
-                    ${feat.timeLogged}
+                    ${escapeHtml(feat.timeLogged)}
                   </span>
                 </div>
                 <div style="font-size: 12px; font-weight: 700; color: #0f172a; line-height: 1.3; margin-bottom: 3px;">
-                  ${feat.type}: ${feat.roadName}
+                  ${escapeHtml(feat.type)}: ${escapeHtml(feat.roadName)}
                 </div>
                 <div style="font-size: 11px; color: #475569; margin-bottom: 3px;">
-                  <b>Severity:</b> ${feat.severity} | <b>Reported by:</b> ${feat.reportedBy}
+                  <b>Severity:</b> ${escapeHtml(feat.severity)} | <b>Reported by:</b> ${escapeHtml(feat.reportedBy)}
                 </div>
-                ${feat.notes ? `<div style="font-size: 10px; color: #334155; margin-bottom: 3px;">${feat.notes}</div>` : ''}
+                ${feat.notes ? `<div style="font-size: 10px; color: #334155; margin-bottom: 3px;">${escapeHtml(feat.notes)}</div>` : ''}
                 <div style="font-size: 10px; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 4px; margin-top: 4px;">
-                  <b>Source:</b> ${feat.source || 'Field Sentinel Report'}
+                  <b>Source:</b> ${escapeHtml(feat.source || 'Field Sentinel Report')}
                 </div>
               </div>
             `)
@@ -883,13 +893,13 @@ export const MapView: React.FC<MapViewProps> = ({
                   IWT Terminal
                 </div>
                 <div style="font-size: 12px; font-weight: 700; color: #0f172a; line-height: 1.3; margin-bottom: 4px;">
-                  ${props.name}
+                  ${escapeHtml(props.name)}
                 </div>
                 <div style="font-size: 11px; color: #475569; margin-bottom: 3px;">
-                  <b>Status:</b> ${props.status || 'OPERATIONAL'}
+                  <b>Status:</b> ${escapeHtml(props.status || 'OPERATIONAL')}
                 </div>
                 <div style="font-size: 10px; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 4px; margin-top: 4px;">
-                  <b>Source:</b> ${props.source}
+                  <b>Source:</b> ${escapeHtml(props.source)}
                 </div>
               </div>
             `)
@@ -950,7 +960,7 @@ export const MapView: React.FC<MapViewProps> = ({
 
         el.innerHTML = `
           <div style="font-size: 9px; font-weight: 800; color: #0f172a; background: white; border: 1.5px solid ${priorityColor}; border-radius: 4px; padding: 1px 5px; margin-bottom: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.2); white-space: nowrap;">
-            ${veh.id} ${isAtRisk ? '⚠️' : isRerouted ? '✅' : ''}
+            ${escapeHtml(veh.id)} ${isAtRisk ? '⚠️' : isRerouted ? '✅' : ''}
           </div>
 
           <div style="position: relative; display: flex; align-items: center; justify-content: center;">
@@ -973,24 +983,24 @@ export const MapView: React.FC<MapViewProps> = ({
               <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 4px 6px; min-width: 220px;">
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
                   <span style="font-size: 10px; font-weight: 800; color: ${priorityColor}; text-transform: uppercase; background: ${priorityColor}18; padding: 2px 6px; border-radius: 4px;">
-                    ${isAtRisk ? 'ROUTE AT RISK' : isRerouted ? 'REROUTED' : veh.priority}
+                    ${escapeHtml(isAtRisk ? 'ROUTE AT RISK' : isRerouted ? 'REROUTED' : veh.priority)}
                   </span>
                   <span style="font-size: 10px; font-weight: 800; color: #2563eb; background: #eff6ff; padding: 2px 6px; border-radius: 4px;">
-                    ETA: ${veh.eta}
+                    ETA: ${escapeHtml(veh.eta)}
                   </span>
                 </div>
                 <div style="font-size: 13px; font-weight: 800; color: #0f172a; margin-bottom: 2px;">
-                  ${veh.id} — ${veh.cargo}
+                  ${escapeHtml(veh.id)} — ${escapeHtml(veh.cargo)}
                 </div>
                 <div style="font-size: 11px; color: #475569; margin-bottom: 3px;">
-                  <b>Driver:</b> ${veh.driver} | <b>Route:</b> ${veh.currentRouteId}
+                  <b>Driver:</b> ${escapeHtml(veh.driver)} | <b>Route:</b> ${escapeHtml(veh.currentRouteId)}
                 </div>
                 <div style="font-size: 11px; color: #475569; margin-bottom: 4px;">
-                  <b>Destination:</b> ${veh.destination}
+                  <b>Destination:</b> ${escapeHtml(veh.destination)}
                 </div>
                 <div style="display: flex; align-items: center; justify-content: space-between; font-size: 10px; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 4px; margin-top: 4px;">
                   <span>GPS: <b style="color: #2563eb;">PROTOTYPE GPS</b></span>
-                  <span style="color: #64748b;">${veh.speedKmh || 48} km/h • Bearing: ${bearing}°</span>
+                  <span style="color: #64748b;">${escapeHtml(veh.speedKmh || 48)} km/h • Bearing: ${bearing}°</span>
                 </div>
               </div>
             `)
@@ -1134,6 +1144,9 @@ export const MapView: React.FC<MapViewProps> = ({
         <div className="relative">
           <button
             onClick={() => setLayersMenuOpen(!layersMenuOpen)}
+            aria-label="Toggle layers menu"
+            aria-expanded={layersMenuOpen}
+            aria-haspopup="true"
             className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm bg-white border border-[#E8D9BC] text-xs font-semibold text-[#2A211A] hover:bg-[#FBF2E1] transition-colors"
             style={{backdropFilter:'blur(10px)', background:'rgba(255,255,255,.92)'}}
           >
@@ -1198,6 +1211,7 @@ export const MapView: React.FC<MapViewProps> = ({
       <div className="absolute top-2.5 right-2.5 z-20 flex flex-col bg-white border border-[#E8D9BC] rounded-sm p-0.5" style={{backdropFilter:'blur(10px)', background:'rgba(255,255,255,.92)'}}>
         <button
           onClick={() => mapRef.current?.zoomIn()}
+          aria-label="Zoom in"
           className="w-7 h-7 flex items-center justify-center hover:bg-[#FBF2E1] rounded-sm text-[#6E6252] hover:text-[#2A211A]"
           title="Zoom in"
         >
@@ -1205,6 +1219,7 @@ export const MapView: React.FC<MapViewProps> = ({
         </button>
         <button
           onClick={() => mapRef.current?.zoomOut()}
+          aria-label="Zoom out"
           className="w-7 h-7 flex items-center justify-center hover:bg-[#FBF2E1] rounded-sm text-[#6E6252] hover:text-[#2A211A] border-t border-[#F1E6CE]"
           title="Zoom out"
         >
@@ -1212,6 +1227,7 @@ export const MapView: React.FC<MapViewProps> = ({
         </button>
         <button
           onClick={() => mapRef.current?.resetNorthPitch()}
+          aria-label="Reset north"
           className="w-7 h-7 flex items-center justify-center hover:bg-[#FBF2E1] rounded-sm text-[#6E6252] hover:text-[#2A211A] border-t border-[#F1E6CE]"
           title="Reset north"
         >

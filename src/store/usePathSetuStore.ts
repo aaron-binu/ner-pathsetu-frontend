@@ -1,7 +1,37 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import { Vehicle, Incident, RoadStatus, LanguageCode, PriorityLevel } from '../types';
 import initialVehicles from '../data/vehicles.json';
 import initialIncidents from '../data/incidents.json';
+
+const generateId = (): string => {
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+    return `INC-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
+  }
+  return `INC-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+};
+
+const MAX_RISK_INDEX = 95;
+const RISK_INCREMENT_BLOCKED = 15;
+const RISK_INCREMENT_RESTRICTED = 6;
+const DEFAULT_ROAD_STATUSES: Record<string, RoadStatus> = {
+  'NH-37': 'OPEN',
+  'NH-27': 'OPEN',
+  'NH-29': 'OPEN',
+  'NH-6': 'OPEN',
+  'ALT-ROUTE-B': 'OPEN',
+};
+const DEFAULT_SUPPLY_NORMAL = { food: 96, medicine: 94, construction: 90, districtsAtRisk: 0 };
+const DEFAULT_SUPPLY_DISRUPTED = { food: 82, medicine: 46, construction: 71, districtsAtRisk: 2 };
+const DEFAULT_SUPPLY_REROUTED = { food: 82, medicine: 88, construction: 71, districtsAtRisk: 1 };
+const DEFAULT_CONNECTIVITY_NORMAL = { accessible: 18, restricted: 0, blocked: 0 };
+const DEFAULT_CONNECTIVITY_DISRUPTED = { accessible: 12, restricted: 4, blocked: 2 };
+const DEFAULT_CONNECTIVITY_REROUTED = { accessible: 14, restricted: 3, blocked: 1 };
+const RISK_NORMAL = 32;
+const RISK_DISRUPTED = 78;
+const RISK_REROUTED = 42;
+const JUNCTION_COORDS: [number, number] = [92.6841, 26.3450];
+const LANDSLIDE_COORDS: [number, number] = [93.18, 26.58];
 
 interface LayerState {
   hazardRisk: boolean;
@@ -140,7 +170,9 @@ const baseAlerts: AlertItem[] = [
   }
 ];
 
-export const usePathSetuStore = create<PathSetuState>((set, get) => ({
+export const usePathSetuStore = create<PathSetuState>()(
+  persist(
+    (set, get) => ({
   activeTab: 'Dashboard',
   leftSidebarTab: 'fleet',
   activeView: 'dashboard',
@@ -493,7 +525,7 @@ export const usePathSetuStore = create<PathSetuState>((set, get) => ({
     const isOffline = get().isOffline;
     const newIncident: Incident = {
       ...report,
-      id: `INC-${Date.now().toString().slice(-4)}`,
+      id: generateId(),
       timeLogged: 'Just now',
       syncStatus: isOffline ? 'PENDING' : 'SYNCED',
     };
@@ -503,7 +535,7 @@ export const usePathSetuStore = create<PathSetuState>((set, get) => ({
         offlineQueue: [...state.offlineQueue, newIncident],
         toastNotification: {
           title: 'SAVED OFFLINE (PENDING SYNC)',
-          body: 'Incident queued locally in IndexedDB cache.',
+          body: 'Incident queued locally and will sync when back online.',
           type: 'info',
         },
       }));
@@ -517,7 +549,7 @@ export const usePathSetuStore = create<PathSetuState>((set, get) => ({
       set((state) => ({
         incidents: [newIncident, ...state.incidents],
         roadStatuses: updatedStatuses,
-        regionalRiskIndex: Math.min(95, state.regionalRiskIndex + (isBlocked ? 15 : 6)),
+        regionalRiskIndex: Math.min(MAX_RISK_INDEX, state.regionalRiskIndex + (isBlocked ? RISK_INCREMENT_BLOCKED : RISK_INCREMENT_RESTRICTED)),
         districtConnectivity: {
           ...state.districtConnectivity,
           blocked: state.districtConnectivity.blocked + (isBlocked ? 1 : 0),
@@ -549,18 +581,64 @@ export const usePathSetuStore = create<PathSetuState>((set, get) => ({
         syncStatus: 'SYNCED' as const,
       }));
 
-      set((state) => ({
-        isOffline: false,
-        isSyncing: false,
-        offlineQueue: [],
-        incidents: [...syncedItems, ...state.incidents],
-        roadStatuses: updatedStatuses,
-        toastNotification: {
-          title: 'OFFLINE SYNC COMPLETED',
-          body: 'All cached telemetry synced to central dashboard.',
-          type: 'success',
-        },
-      }));
+      set((state) => {
+        let riskDelta = 0;
+        let blockedDelta = 0;
+        let restrictedDelta = 0;
+        queue.forEach((item) => {
+          const isBlocked = item.roadStatus === 'BLOCKED';
+          riskDelta += isBlocked ? RISK_INCREMENT_BLOCKED : RISK_INCREMENT_RESTRICTED;
+          if (isBlocked) blockedDelta += 1;
+          else restrictedDelta += 1;
+        });
+        return {
+          isOffline: false,
+          isSyncing: false,
+          offlineQueue: [],
+          incidents: [...syncedItems, ...state.incidents],
+          roadStatuses: updatedStatuses,
+          regionalRiskIndex: Math.min(MAX_RISK_INDEX, state.regionalRiskIndex + riskDelta),
+          districtConnectivity: {
+            ...state.districtConnectivity,
+            blocked: state.districtConnectivity.blocked + blockedDelta,
+            restricted: state.districtConnectivity.restricted + restrictedDelta,
+          },
+          toastNotification: {
+            title: 'OFFLINE SYNC COMPLETED',
+            body: 'All cached telemetry synced to central dashboard.',
+            type: 'success',
+          },
+        };
+      });
     }, 500);
   },
-}));
+    }),
+    {
+      name: 'pathsetu-storage',
+      partialize: (state) => ({
+        offlineQueue: state.offlineQueue,
+        incidents: state.incidents,
+        roadStatuses: state.roadStatuses,
+        isOffline: state.isOffline,
+      }),
+    }
+  )
+);
+
+// Auto-sync on network status changes
+if (typeof window !== 'undefined') {
+  window.addEventListener('online', () => {
+    const state = usePathSetuStore.getState();
+    if (state.offlineQueue.length > 0) {
+      state.syncOfflineQueue();
+    } else {
+      state.setOfflineMode(false);
+    }
+  });
+  window.addEventListener('offline', () => {
+    usePathSetuStore.getState().setOfflineMode(true);
+  });
+  if (typeof navigator !== 'undefined') {
+    usePathSetuStore.setState({ isOffline: !navigator.onLine });
+  }
+}
