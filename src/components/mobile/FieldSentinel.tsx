@@ -75,7 +75,7 @@ export const FieldSentinel: React.FC = () => {
 
   if (view==='form') {
     const types = ['Landslide','Flood','Road Damage','Bridge Damage','Road Blockage','Other'];
-    const sevs: PriorityLevel[] = ['LOW','MEDIUM' as any,'CRITICAL'] as any;
+    const sevs: PriorityLevel[] = ['LOW','HIGH','CRITICAL'];
     // map LOW/MEDIUM to types store expects: LOW->LOW, MEDIUM->HIGH, CRITICAL->CRITICAL
     const sevMap: Record<string, PriorityLevel> = {Low:'LOW', Medium:'HIGH', Critical:'CRITICAL'};
     return (
@@ -140,7 +140,7 @@ export const FieldSentinel: React.FC = () => {
         <div className="mrow"><span>Severity</span><b>{sev}</b></div>
         <div className="mrow"><span>Sync Status</span><b style={{color: successSynced?'#547A3F':'#B0741C'}}>{successSynced?'Synced':'Pending'}</b></div>
       </div>
-      {!successSynced && <button className="f-submit" style={{background:'#2A211A'}} onClick={()=>{ setSuccessSynced(true); }}>Sync Now</button>}
+      {!successSynced && <button className="f-submit" style={{background:'#2A211A'}} onClick={()=>{ syncOfflineQueue(); setSuccessSynced(true); }}>Sync Now</button>}
       <button className="f-done-btn" onClick={()=>{
         setView('home');
         // stay on field view, user can go back via header

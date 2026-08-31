@@ -1,6 +1,5 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import { Header } from './components/layout/Header';
-import { MapView } from './components/map/MapView';
 import { FieldSentinel } from './components/mobile/FieldSentinel';
 import { RouteDecisionModal } from './components/modals/RouteDecisionModal';
 import { VehicleDetailModal } from './components/modals/VehicleDetailModal';
@@ -8,6 +7,11 @@ import { IncidentDetailModal } from './components/modals/IncidentDetailModal';
 import { AlertBroadcastModal } from './components/modals/AlertBroadcastModal';
 import { usePathSetuStore } from './store/usePathSetuStore';
 import { playMultilingualAlert } from './utils/audio';
+import { ErrorBoundary } from './components/ErrorBoundary';
+import initialDeliveries from './data/deliveries.json';
+import districtsGeoJSON from './data/districts.geojson';
+
+const MapView = React.lazy(() => import('./components/map/MapView').then(m => ({ default: m.MapView })));
 
 
 
@@ -266,8 +270,8 @@ const ToastContainer: React.FC = () => {
   if (!toastNotification) return null;
   const cls = toastNotification.type === 'danger' ? 'crit' : toastNotification.type === 'success' ? 'ok' : 'warn';
   return (
-    <div className="toast-stack">
-      <div className={`toast ${cls}`}>
+    <div className="toast-stack" role="status" aria-live="polite" aria-atomic="true">
+      <div className={`toast ${cls}`} role="alert">
         <div className="ttitle">{toastNotification.title}</div>
         <div className="tbody">{toastNotification.body}</div>
       </div>
@@ -302,7 +306,11 @@ export const App: React.FC = () => {
             <div className="dash-grid" style={{gridTemplateColumns:'224px 1fr', minHeight:620}}>
               <LayerRail />
               <div className="map-wrap" style={{height:'85vh', minHeight:620}}>
-                <MapView className="w-full h-full" hideLayersButton />
+                <ErrorBoundary>
+                  <Suspense fallback={<div style={{display:'flex',alignItems:'center',justifyContent:'center',height:'100%',color:'var(--text-faint)',fontSize:12}}>Loading map…</div>}>
+                    <MapView className="w-full h-full" hideLayersButton />
+                  </Suspense>
+                </ErrorBoundary>
               </div>
             </div>
           </div>
@@ -331,7 +339,11 @@ export const App: React.FC = () => {
               <div className="dash-grid">
                 <CriticalLeftPanel />
                 <div className="map-wrap">
-                  <MapView className="w-full h-full" />
+                  <ErrorBoundary>
+                    <Suspense fallback={<div style={{display:'flex',alignItems:'center',justifyContent:'center',height:'100%',color:'var(--text-faint)',fontSize:12}}>Loading map…</div>}>
+                      <MapView className="w-full h-full" />
+                    </Suspense>
+                  </ErrorBoundary>
                 </div>
                 <Drawer />
               </div>
@@ -432,35 +444,147 @@ const DistrictList: React.FC = () => {
 };
 
 const DashboardBottomSection: React.FC = () => {
-  const { supplyStatus, districtConnectivity } = usePathSetuStore();
+  const { vehicles, incidents, roadStatuses, regionalRiskIndex, setSelectedVehicle, setFocusCoordinates, openRouteDecision, openIncidentDetail } = usePathSetuStore();
+
+  const essentialFleet = vehicles.filter(v => v.priority === 'CRITICAL' || v.priority === 'HIGH').slice(0, 6);
+  const fleetToShow = essentialFleet.length > 0 ? essentialFleet : vehicles.slice(0, 6);
+
+  const formatLastSync = (v: typeof vehicles[number]) => {
+    const sec = v.lastUpdateSec ?? 180;
+    const ago = sec < 60 ? `${sec}s ago` : `${Math.floor(sec/60)}m ago`;
+    const via = v.gpsStatus === 'LIVE' ? 'V2V' : v.gpsStatus === 'OFFLINE' ? 'Offline' : v.gpsStatus === 'SIMULATED' ? 'V2V' : 'Cellular';
+    const color = v.gpsStatus === 'OFFLINE' ? 'var(--crit)' : 'var(--open)';
+    return { ago, via, color };
+  };
+
+  const timelineItems = (() => {
+    const items: { time: string; icon: string; title: string; detail: string; source: string; severity: 'CRITICAL'|'HIGH'|'INFO'; onClick?: () => void }[] = [];
+    const isBlocked = roadStatuses['NH-37'] === 'BLOCKED';
+    const reroutedVeh = vehicles.find(v => v.rerouteAccepted);
+    const atRiskVeh = vehicles.find(v => v.routeAtRisk);
+
+    if (isBlocked) {
+      items.push({ time:'10:15 AM', icon:'🚨', title:'DRAI Alert: NH-37 status changed to BLOCKED.', detail:'Major mud & boulder slide at Km 142, both lanes impassable.', source:'DRAI', severity:'CRITICAL' });
+    } else {
+      items.push({ time:'10:15 AM', icon:'✅', title:'DRAI: NH-37 corridor OPEN', detail:'All lanes operational, no active disruption.', source:'DRAI', severity:'INFO' });
+    }
+
+    if (incidents[0]) {
+      const inc = incidents[0];
+      items.push({
+        time:'10:12 AM',
+        icon:'📷',
+        title:`Field Sentinel: Photo verification received from ${inc.reportedBy}`,
+        detail:`${inc.type} — ${inc.roadName} (${inc.roadStatus})`,
+        source:'Field Sentinel',
+        severity: inc.severity === 'CRITICAL' ? 'CRITICAL' : 'HIGH',
+        onClick: () => openIncidentDetail(inc)
+      });
+    }
+
+    items.push({
+      time:'10:05 AM',
+      icon:'🛰️',
+      title:'NASA Nowcast: High earth-shift detected at Km 142.',
+      detail:`Regional Risk ${regionalRiskIndex}/100 • ${isBlocked ? 'Landslide susceptibility 58% • Rainfall 96mm' : 'Monitoring normal'}`,
+      source:'NASA LHASA',
+      severity: regionalRiskIndex >= 70 ? 'CRITICAL' : 'HIGH'
+    });
+
+    if (reroutedVeh) {
+      items.push({ time:'09:50 AM', icon:'🔄', title:`System: Reroute initiated for ${reroutedVeh.id}`, detail:`Diverted via ${reroutedVeh.currentRouteId} to ${reroutedVeh.destination} • ETA ${reroutedVeh.eta}`, source:'System', severity:'INFO', onClick: () => { setSelectedVehicle(reroutedVeh); setFocusCoordinates(reroutedVeh.coordinates); } });
+    } else if (atRiskVeh) {
+      items.push({ time:'09:50 AM', icon:'⚠️', title:`System: Reroute required for ${atRiskVeh.id}`, detail:`Halted at Nagaon — ALT-ROUTE-B ready (+45m)`, source:'System', severity:'CRITICAL', onClick: () => openRouteDecision(atRiskVeh) });
+    } else {
+      items.push({ time:'09:50 AM', icon:'📡', title:'System: Fleet telemetry nominal', detail:'All convoys on schedule, no reroute active.', source:'System', severity:'INFO' });
+    }
+
+    return items;
+  })();
+
   return (
     <div className="bottom-grid" style={{marginTop: 14}}>
-      <div className="panel">
+      <div className="panel" style={{display:'flex', flexDirection:'column', overflow:'hidden'}}>
         <div className="panel-title" style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
-          <span>District Connectivity — Access Status</span>
-          <span style={{fontSize:'10px', color:'var(--text-faint)'}}>{districtConnectivity.accessible} Accessible · {districtConnectivity.blocked} Blocked</span>
+          <span>Active Essential Fleet Tracker</span>
+          <span style={{fontSize:'10px', color:'var(--text-faint)', fontWeight:600}}>(d) Live • {fleetToShow.length} units</span>
         </div>
-        <DistrictList />
+        <div style={{padding:'0', overflowX:'auto'}}>
+          <table className="logi" style={{width:'100%', fontSize:12}}>
+            <thead>
+              <tr style={{background:'var(--surface-2)'}}>
+                <th style={{textAlign:'left', padding:'8px 10px', fontSize:10, letterSpacing:.4, color:'var(--text-faint)'}}>Cargo ID</th>
+                <th style={{padding:'8px 10px', fontSize:10, color:'var(--text-faint)'}}>Priority</th>
+                <th style={{padding:'8px 10px', fontSize:10, color:'var(--text-faint)'}}>ETA / Delay</th>
+                <th style={{padding:'8px 10px', fontSize:10, color:'var(--text-faint)'}}>Last Sync</th>
+                <th style={{padding:'8px 10px'}}></th>
+              </tr>
+            </thead>
+            <tbody>
+              {fleetToShow.map(v=>{
+                const { ago, via, color } = formatLastSync(v);
+                const isDelay = v.eta.includes('+');
+                const delayPart = isDelay ? v.eta.slice(v.eta.indexOf('(')) : '';
+                const etaMain = isDelay ? v.eta.slice(0, v.eta.indexOf('(')).trim() : v.eta;
+                return (
+                  <tr key={v.id} style={{borderTop:'1px solid var(--border-soft)'}}>
+                    <td style={{padding:'8px 10px'}}>
+                      <div className="mono" style={{fontWeight:700, fontSize:12}}>{v.id}</div>
+                      <div style={{fontSize:11, color:'var(--text-dim)', whiteSpace:'nowrap'}}>{v.cargo}</div>
+                    </td>
+                    <td style={{padding:'8px 10px', textAlign:'center'}}><span className={`priority-pill ${v.priority.toLowerCase()}`} style={{fontSize:9, padding:'2px 6px'}}>{v.priority}</span></td>
+                    <td style={{padding:'8px 10px', whiteSpace:'nowrap'}}>
+                      <span className="mono" style={{fontWeight:600}}>{etaMain}</span>
+                      {delayPart && <span className="mono" style={{color:'var(--crit)', fontWeight:700, marginLeft:6}}>{delayPart}</span>}
+                    </td>
+                    <td style={{padding:'8px 10px', whiteSpace:'nowrap'}}>
+                      <div style={{display:'flex', alignItems:'center', gap:6, fontSize:11}}>
+                        <span style={{width:6, height:6, borderRadius:'50%', background:color, display:'inline-block'}}></span>
+                        <span className="mono" style={{fontSize:11}}>{ago}</span>
+                      </div>
+                      <div style={{fontSize:10, color:'var(--text-faint)'}}>via {via}</div>
+                    </td>
+                    <td style={{padding:'8px 10px', textAlign:'right'}}>
+                      <button className="btn" style={{padding:'5px 9px', fontSize:11, whiteSpace:'nowrap'}} onClick={()=>{ setSelectedVehicle(v); setFocusCoordinates(v.coordinates); openRouteDecision(v); }}>View Route</button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        <div style={{padding:'8px 12px', borderTop:'1px solid var(--border-soft)', background:'var(--surface-2)', fontSize:11, color:'var(--text-faint)', display:'flex', justifyContent:'space-between'}}>
+          <span>Tracking movement of essential commodities (d) • V2V proves offline sync</span>
+          <span className="mono">{vehicles.length} total</span>
+        </div>
       </div>
 
-      <div className="panel">
-        <div className="panel-title">Regional Supply Gaps & Buffer</div>
-        <div style={{padding:'14px 18px 18px'}}>
-          <div className="supply-bar-row">
-            <div className="sname">Food Supplies Buffer</div>
-            <div className="supply-track"><div className="supply-fill" style={{width:`${supplyStatus.food}%`, background:'linear-gradient(90deg,var(--brand),#EF8B7E)'}}></div></div>
-            <div className="spct" style={{color:'var(--brand)'}}>{supplyStatus.food}%</div>
+      <div className="panel" style={{display:'flex', flexDirection:'column', overflow:'hidden'}}>
+        <div className="panel-title" style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+          <span>Live Incident & Decision Log</span>
+          <span style={{fontSize:'10px', color:'var(--crit)', fontWeight:700, display:'flex', alignItems:'center', gap:4}}><span style={{width:6,height:6,borderRadius:'50%',background:'var(--crit)', display:'inline-block'}}></span>Live</span>
+        </div>
+        <div style={{flex:1, overflowY:'auto', padding:'12px 16px 14px', position:'relative'}}>
+          <div style={{position:'absolute', left:24, top:12, bottom:14, width:2, background:'var(--border-soft)', borderRadius:2}}></div>
+          <div style={{display:'flex', flexDirection:'column', gap:14}}>
+            {timelineItems.map((it, idx)=>(
+              <div key={idx} onClick={it.onClick} style={{display:'flex', gap:12, alignItems:'flex-start', cursor: it.onClick ? 'pointer' : 'default', opacity: idx===0 ? 1 : 0.92}}>
+                <div style={{width:20, height:20, borderRadius:'50%', background: it.severity==='CRITICAL'?'var(--crit)': it.severity==='HIGH'?'var(--warn)':'var(--open)', color:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, flexShrink:0, marginTop:2, border:'2px solid var(--surface)', boxShadow:'0 0 0 2px var(--border-soft)'}}>{it.icon}</div>
+                <div style={{flex:1, minWidth:0}}>
+                  <div style={{display:'flex', alignItems:'center', gap:8, flexWrap:'wrap'}}>
+                    <span className="mono" style={{fontSize:11, fontWeight:700, color:'var(--text-dim)', background:'var(--surface-2)', padding:'2px 6px', borderRadius:6, border:'1px solid var(--border-soft)'}}>{it.time}</span>
+                    <span style={{fontSize:10, fontWeight:800, letterSpacing:.4, textTransform:'uppercase', padding:'2px 6px', borderRadius:6, background: it.severity==='CRITICAL'?'var(--crit-dim)': it.severity==='HIGH'?'var(--warn-dim)':'#EAF1E4', color: it.severity==='CRITICAL'?'var(--crit)': it.severity==='HIGH'?'var(--warn)':'var(--open)'}}>{it.source}</span>
+                  </div>
+                  <div style={{fontWeight:700, fontSize:13, lineHeight:1.35, marginTop:6, color:'var(--text)'}}>{it.title}</div>
+                  <div style={{fontSize:12, color:'var(--text-dim)', marginTop:3, lineHeight:1.4}}>{it.detail}</div>
+                </div>
+              </div>
+            ))}
           </div>
-          <div className="supply-bar-row">
-            <div className="sname">Emergency Medicine</div>
-            <div className="supply-track"><div className="supply-fill" style={{width:`${supplyStatus.medicine}%`, background: supplyStatus.medicine < 50 ? 'linear-gradient(90deg,var(--crit),#EF8B7E)' : 'linear-gradient(90deg,var(--open),#A6C495)'}}></div></div>
-            <div className="spct" style={{color: supplyStatus.medicine < 50 ? 'var(--crit)' : 'var(--open)'}}>{supplyStatus.medicine}%</div>
-          </div>
-          <div className="supply-bar-row">
-            <div className="sname">Construction & Relief</div>
-            <div className="supply-track"><div className="supply-fill" style={{width:`${supplyStatus.construction}%`, background:'linear-gradient(90deg,var(--route),#8EB5CA)'}}></div></div>
-            <div className="spct" style={{color:'var(--route)'}}>{supplyStatus.construction}%</div>
-          </div>
+        </div>
+        <div style={{padding:'8px 12px', borderTop:'1px solid var(--border-soft)', background:'var(--surface-2)', fontSize:11, color:'var(--text-faint)', display:'flex', justifyContent:'space-between'}}>
+          <span>(b) Predicts • (f) Field reports • Satellite (F1) ↔ Sentinel (F2)</span>
+          <span className="mono">{timelineItems.length} events</span>
         </div>
       </div>
     </div>
