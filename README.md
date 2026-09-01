@@ -1,8 +1,8 @@
-# NER-PathSetu — Logistics Resilience Intelligence for North-East India
+# MargMitra — Logistics Resilience Intelligence for North-East India
 
 > **SIH Prototype · Government-grade control room for highway connectivity, field verification, and critical supply rerouting across the North Eastern Region (Sikkim, Assam, Arunachal, Meghalaya, Nagaland, Manipur, Mizoram, Tripura).**
 
-NER-PathSetu fuses **satellite + weather model + InSAR + field reports** into a single operational picture: *what is blocked, where, why, and what to do next* — for government dispatch, field officers, and fleet operators. Built for the **Smart India Hackathon**.
+MargMitra fuses **satellite + weather model + InSAR + field reports** into a single operational picture: *what is blocked, where, why, and what to do next* — for government dispatch, field officers, and fleet operators. Built for the **Smart India Hackathon**.
 
 ![Cream Coral Theme](https://img.shields.io/badge/theme-Cream%20Coral-%23E2726B) ![MapLibre](https://img.shields.io/badge/map-MapLibre%206.6-7CA36B) ![React 18](https://img.shields.io/badge/React-18-6C93A8) ![Vite](https://img.shields.io/badge/build-Vite%206-6464ff)
 

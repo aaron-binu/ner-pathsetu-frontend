@@ -375,7 +375,7 @@ export const App: React.FC = () => {
         )}
       </main>
 
-      <div className="footer-note">NER-PathSetu — prototype interface · mock intelligence data for demonstration · Smart India Hackathon</div>
+      <div className="footer-note">MargMitra — prototype interface · mock intelligence data for demonstration · Smart India Hackathon</div>
       <ToastContainer />
 
       <RouteDecisionModal />

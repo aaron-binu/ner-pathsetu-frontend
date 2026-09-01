@@ -42,9 +42,9 @@ export const Header: React.FC = () => {
   return (
     <header className="topbar">
       <div className="brand-mark">
-        <div className="brand-glyph">PS</div>
+        <div className="brand-glyph">MM</div>
         <div className="brand-text">
-          <div className="name">NER-PathSetu</div>
+          <div className="name">MargMitra</div>
           <div className="tag">Logistics Resilience Intelligence</div>
         </div>
       </div>
